@@ -1,12 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { audioManager } from "@/lib/audioManager";
 import { lessonAudio } from "@/config/lessonAudio";
 
 export function useLessonAudio(chunkId: number, enabled: boolean) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [rate, setRate] = useState(1);
+  const [muted, setMutedState] = useState(false);
+  const [rate, setRateState] = useState(1);
   const lastChunk = useRef<number | null>(null);
+
+  // Subscribe to manager updates so volume sliders re-render
+  const snapshot = useSyncExternalStore(
+    (cb) => audioManager.subscribe(cb),
+    () => ({
+      n: audioManager.narrationVolume,
+      a: audioManager.ambienceVolume,
+      e: audioManager.effectsVolume,
+      m: audioManager.muted,
+    }),
+    () => ({ n: 1, a: 0.5, e: 0.8, m: false })
+  );
 
   useEffect(() => {
     audioManager.setMuted(!enabled || muted);
@@ -20,9 +32,29 @@ export function useLessonAudio(chunkId: number, enabled: boolean) {
     return () => audioManager.stopAll();
   }, []);
 
+  // Auto-play on chunk change (when enabled)
+  useEffect(() => {
+    if (!enabled) {
+      audioManager.stopAll();
+      setIsPlaying(false);
+      return;
+    }
+    const cfg = lessonAudio[chunkId];
+    if (!cfg) return;
+    audioManager.playChunk(cfg);
+    setIsPlaying(true);
+    lastChunk.current = chunkId;
+  }, [chunkId, enabled]);
+
   const play = () => {
     const cfg = lessonAudio[chunkId];
     if (!cfg) return;
+    if (lastChunk.current === chunkId && !isPlaying) {
+      // resume
+      audioManager.resumeAll();
+      setIsPlaying(true);
+      return;
+    }
     audioManager.playChunk(cfg);
     setIsPlaying(true);
     lastChunk.current = chunkId;
@@ -33,13 +65,11 @@ export function useLessonAudio(chunkId: number, enabled: boolean) {
     setIsPlaying(false);
   };
 
-  const resume = () => {
-    audioManager.resumeAll();
-    setIsPlaying(true);
-  };
-
   const replay = () => {
-    play();
+    const cfg = lessonAudio[chunkId];
+    if (!cfg) return;
+    audioManager.playChunk(cfg);
+    setIsPlaying(true);
   };
 
   const stop = () => {
@@ -50,13 +80,19 @@ export function useLessonAudio(chunkId: number, enabled: boolean) {
   return {
     isPlaying,
     muted,
-    setMuted,
+    setMuted: setMutedState,
     rate,
-    setRate,
+    setRate: setRateState,
     play,
     pause,
-    resume,
+    resume: play,
     replay,
     stop,
+    narrationVolume: snapshot.n,
+    ambienceVolume: snapshot.a,
+    effectsVolume: snapshot.e,
+    setNarrationVolume: (v: number) => audioManager.setNarrationVolume(v),
+    setAmbienceVolume: (v: number) => audioManager.setAmbienceVolume(v),
+    setEffectsVolume: (v: number) => audioManager.setEffectsVolume(v),
   };
 }
