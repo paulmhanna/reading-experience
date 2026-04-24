@@ -9,38 +9,135 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResultsRouteImport } from './routes/results'
+import { Route as ReadingRouteImport } from './routes/reading'
+import { Route as InstructionsRouteImport } from './routes/instructions'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin-analytics'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SectionIdxRouteImport } from './routes/section.$idx'
 
+const ResultsRoute = ResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReadingRoute = ReadingRouteImport.update({
+  id: '/reading',
+  path: '/reading',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstructionsRoute = InstructionsRouteImport.update({
+  id: '/instructions',
+  path: '/instructions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/admin-analytics',
+  path: '/admin-analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SectionIdxRoute = SectionIdxRouteImport.update({
+  id: '/section/$idx',
+  path: '/section/$idx',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin-analytics': typeof AdminAnalyticsRoute
+  '/instructions': typeof InstructionsRoute
+  '/reading': typeof ReadingRoute
+  '/results': typeof ResultsRoute
+  '/section/$idx': typeof SectionIdxRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-analytics': typeof AdminAnalyticsRoute
+  '/instructions': typeof InstructionsRoute
+  '/reading': typeof ReadingRoute
+  '/results': typeof ResultsRoute
+  '/section/$idx': typeof SectionIdxRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin-analytics': typeof AdminAnalyticsRoute
+  '/instructions': typeof InstructionsRoute
+  '/reading': typeof ReadingRoute
+  '/results': typeof ResultsRoute
+  '/section/$idx': typeof SectionIdxRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin-analytics'
+    | '/instructions'
+    | '/reading'
+    | '/results'
+    | '/section/$idx'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin-analytics'
+    | '/instructions'
+    | '/reading'
+    | '/results'
+    | '/section/$idx'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin-analytics'
+    | '/instructions'
+    | '/reading'
+    | '/results'
+    | '/section/$idx'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  InstructionsRoute: typeof InstructionsRoute
+  ReadingRoute: typeof ReadingRoute
+  ResultsRoute: typeof ResultsRoute
+  SectionIdxRoute: typeof SectionIdxRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/results': {
+      id: '/results'
+      path: '/results'
+      fullPath: '/results'
+      preLoaderRoute: typeof ResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reading': {
+      id: '/reading'
+      path: '/reading'
+      fullPath: '/reading'
+      preLoaderRoute: typeof ReadingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/instructions': {
+      id: '/instructions'
+      path: '/instructions'
+      fullPath: '/instructions'
+      preLoaderRoute: typeof InstructionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-analytics': {
+      id: '/admin-analytics'
+      path: '/admin-analytics'
+      fullPath: '/admin-analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +145,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/section/$idx': {
+      id: '/section/$idx'
+      path: '/section/$idx'
+      fullPath: '/section/$idx'
+      preLoaderRoute: typeof SectionIdxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  InstructionsRoute: InstructionsRoute,
+  ReadingRoute: ReadingRoute,
+  ResultsRoute: ResultsRoute,
+  SectionIdxRoute: SectionIdxRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
