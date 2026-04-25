@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { sections } from "@/config/questions";
 import { fullText, lessonAuthor, lessonTitle } from "@/config/lessonText";
 import { QuestionRenderer } from "@/components/QuestionRenderer";
-import { progressStore, useProgress, trackEvent } from "@/lib/progress";
+import { progressStore, useProgress, trackCompleted } from "@/lib/progress";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/section/$idx")({
@@ -24,7 +24,10 @@ function SectionPage() {
 
   useEffect(() => {
     setAnswers(progress.answers[section?.id || ""] || {});
-    progressStore.set((p) => ({ ...p, flowStep: "section", currentSection: sectionIdx }));
+    progressStore.set((p) => {
+      if (p.flowStep === "section" && p.currentSection === sectionIdx) return p;
+      return { ...p, flowStep: "section", currentSection: sectionIdx };
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionIdx]);
@@ -47,12 +50,12 @@ function SectionPage() {
     else navigate({ to: "/reading" });
   };
   const goNext = () => {
-    trackEvent("section_completed", { name: progress.studentName, cls: progress.studentClass });
     if (sectionIdx < sections.length - 1) {
       navigate({ to: "/section/$idx", params: { idx: String(sectionIdx + 1) } });
     } else {
-      progressStore.set((p) => ({ ...p, completedAt: Date.now(), flowStep: "results" }));
-      trackEvent("assessment_submitted", { name: progress.studentName, cls: progress.studentClass });
+      progressStore.set((p) => ({ ...p, completedAt: p.completedAt || Date.now(), flowStep: "results" }));
+      const sid = progressStore.get().sessionId;
+      trackCompleted(sid, progress.studentName, progress.studentClass);
       navigate({ to: "/results" });
     }
   };

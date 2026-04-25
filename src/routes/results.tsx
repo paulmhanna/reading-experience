@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { sections, gradeSection } from "@/config/questions";
-import { QuestionRenderer } from "@/components/QuestionRenderer";
-import { progressStore, useProgress, trackEvent } from "@/lib/progress";
+import { progressStore, useProgress } from "@/lib/progress";
 import { lessonAuthor, lessonTitle } from "@/config/lessonText";
 import { exportElementToPdf } from "@/lib/pdf";
-import { Download, RotateCcw, Trophy } from "lucide-react";
+import { resolveAnswer } from "@/lib/answerResolver";
+import { Download, RotateCcw, Trophy, Check, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/results")({
   head: () => ({ meta: [{ title: "النّتائج" }] }),
@@ -16,6 +16,8 @@ function ResultsPage() {
   const progress = useProgress();
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const results = useMemo(() => {
     return sections
@@ -31,12 +33,22 @@ function ResultsPage() {
   const pct = totalMax ? Math.round((totalEarned / totalMax) * 100) : 0;
 
   const onDownload = async () => {
-    if (!reportRef.current) return;
-    trackEvent("pdf_downloaded", { name: progress.studentName, cls: progress.studentClass });
-    const safeName = (progress.studentName || "تلميذ").replace(/\s+/g, "_");
-    const safeCls = (progress.studentClass || "").replace(/\s+/g, "_");
-    const filename = `${safeName}_${safeCls}_في_ملعب_كرة_السلة.pdf`;
-    await exportElementToPdf(reportRef.current, filename);
+    setErrorMsg(null);
+    if (!reportRef.current) {
+      setErrorMsg("تعذّر تجهيز التّقرير. حاول مرّة أخرى.");
+      return;
+    }
+    setDownloading(true);
+    try {
+      const safeName = (progress.studentName || "تلميذ").replace(/\s+/g, "_");
+      const filename = `${safeName}_في_ملعب_كرة_السلة.pdf`;
+      await exportElementToPdf(reportRef.current, filename);
+    } catch (e: any) {
+      console.error("[pdf] download failed:", e);
+      setErrorMsg("حدث خطأ أثناء توليد ملف PDF: " + (e?.message || "غير معروف"));
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const restart = () => {
@@ -52,9 +64,11 @@ function ResultsPage() {
           <div className="flex gap-3">
             <button
               onClick={onDownload}
-              className="px-5 py-2.5 rounded-xl btn-gold font-bold flex items-center gap-2 hover:[transform:translateY(-2px)] transition"
+              disabled={downloading}
+              className="px-5 py-2.5 rounded-xl btn-gold font-bold flex items-center gap-2 hover:[transform:translateY(-2px)] transition disabled:opacity-60"
             >
-              <Download className="w-4 h-4" /> تنزيل PDF
+              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {downloading ? "جاري التّحميل..." : "تحميل PDF"}
             </button>
             <button
               onClick={restart}
@@ -65,7 +79,13 @@ function ResultsPage() {
           </div>
         </div>
 
-        <div ref={reportRef} className="space-y-6">
+        {errorMsg && (
+          <div className="mb-6 p-4 rounded-xl bg-destructive/15 border border-destructive/40 text-destructive text-sm">
+            {errorMsg}
+          </div>
+        )}
+
+        <div ref={reportRef} dir="rtl" className="space-y-6 bg-background/0">
           {/* Header */}
           <div className="glass-panel rounded-3xl p-6 md:p-8 text-center">
             <Trophy className="w-12 h-12 mx-auto text-accent trophy-glow mb-3" />
@@ -79,38 +99,61 @@ function ResultsPage() {
             </div>
           </div>
 
-          {/* Scores */}
-          <div className="grid md:grid-cols-3 gap-4">
+          {/* Scores summary */}
+          <div className="grid md:grid-cols-2 gap-4">
             {results.map((r) => (
               <ScoreCard key={r.section.id} title={r.section.title} earned={r.earned} max={r.max} />
             ))}
-            <div className="glass-panel rounded-3xl p-6 text-center md:col-span-3 scoreboard-flash">
-              <div className="text-sm text-muted-foreground">العلامة النّهائيّة</div>
-              <div className="text-5xl font-extrabold gold-text mt-2">
-                {Math.round(totalEarned * 10) / 10} / {totalMax}
-              </div>
-              <div className="text-xl electric-text mt-1">{pct}%</div>
-              <div className="text-xs text-accent/80 mt-3">
-                التّعبير والبحث لا يشملهما التّقييم.
-              </div>
+          </div>
+
+          <div className="glass-panel rounded-3xl p-6 text-center scoreboard-flash">
+            <div className="text-sm text-muted-foreground">العلامة النّهائيّة</div>
+            <div className="text-5xl font-extrabold gold-text mt-2">
+              {Math.round(totalEarned * 10) / 10} / {totalMax}
+            </div>
+            <div className="text-xl electric-text mt-1">{pct}%</div>
+            <div className="text-xs text-accent/80 mt-3">
+              التّعبير والبحث لا يشملهما التّقييم.
             </div>
           </div>
 
-          {/* Detailed corrections */}
+          {/* Detailed corrections — full per-question breakdown */}
           {results.map((r) => (
-            <div key={r.section.id}>
-              <h2 className="text-2xl font-bold electric-text mb-3">تصحيح: {r.section.title}</h2>
-              <QuestionRenderer
-                section={r.section}
-                answers={progress.answers[r.section.id] || {}}
-                onChange={() => {}}
-                showCorrection
-                perQuestion={r.perQuestion}
-              />
+            <div key={r.section.id} className="space-y-4">
+              <h2 className="text-2xl font-bold electric-text">تصحيح: {r.section.title}</h2>
+              {r.section.questions.map((q, idx) => {
+                const score = r.perQuestion.find((p) => p.questionId === q.id);
+                const lines = resolveAnswer(q, progress.answers[r.section.id]?.[q.id]);
+                const earned = score?.earned ?? 0;
+                const max = score?.max ?? 0;
+                return (
+                  <div key={q.id} className="glass-panel rounded-2xl p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+                      <h3 className="text-arabic-lg font-bold flex-1">
+                        <span className="electric-text">سؤال {idx + 1}.</span> {q.prompt}
+                      </h3>
+                      {max > 0 && (
+                        <span className="px-3 py-1 rounded-full text-sm font-bold bg-secondary/60 whitespace-nowrap">
+                          العلامة: {Math.round(earned * 10) / 10} / {max}
+                        </span>
+                      )}
+                    </div>
+                    {q.context && (
+                      <div className="mb-3 p-3 rounded-xl bg-secondary/40 text-sm leading-loose border-r-4 border-accent">
+                        {q.context}
+                      </div>
+                    )}
+                    <div className="space-y-3">
+                      {lines.map((line, i) => (
+                        <AnswerLine key={i} line={line} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))}
 
-          {/* Expression / Research display */}
           {(progress.expressionText || progress.researchText) && (
             <div className="glass-panel rounded-3xl p-6">
               <h2 className="text-xl font-bold gold-text mb-4">إجابات غير محتسبة</h2>
@@ -129,6 +172,62 @@ function ResultsPage() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AnswerLine({ line }: { line: ReturnType<typeof resolveAnswer>[number] }) {
+  const ok = line.ok;
+  const isOk = ok === true;
+  const isWrong = ok === false;
+  const isPartial = ok === "partial";
+  const isUngraded = ok === "ungraded";
+
+  return (
+    <div
+      className={`p-3 rounded-xl border-2 ${
+        isOk
+          ? "border-success/60 bg-success/10"
+          : isWrong
+          ? "border-destructive/60 bg-destructive/10"
+          : "border-border bg-secondary/30"
+      }`}
+    >
+      {line.label && (
+        <div className="text-sm font-semibold text-foreground/80 mb-2">{line.label}</div>
+      )}
+      <div className="grid sm:grid-cols-2 gap-3 text-sm">
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">إجابة التّلميذ</div>
+          <div className={`font-semibold ${isWrong ? "text-destructive" : ""}`}>{line.given}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">الإجابة الصّحيحة</div>
+          <div className="font-semibold text-success">{line.correct || "—"}</div>
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-xs">
+        {isOk && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/20 text-success font-bold">
+            <Check className="w-3 h-3" /> صحيح
+          </span>
+        )}
+        {isWrong && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-bold">
+            <X className="w-3 h-3" /> خطأ
+          </span>
+        )}
+        {isPartial && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/20 text-accent font-bold">
+            تصحيح جزئيّ
+          </span>
+        )}
+        {isUngraded && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/60 text-muted-foreground font-bold">
+            غير محتسب
+          </span>
+        )}
       </div>
     </div>
   );

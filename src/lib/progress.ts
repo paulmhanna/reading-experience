@@ -2,21 +2,21 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { AnswerValue } from "@/config/questions";
 
 const STORAGE_KEY = "salla-app-progress-v1";
-const ANALYTICS_KEY = "salla-app-analytics-v1";
+const ANALYTICS_KEY = "salla-app-analytics-v2";
 
 export interface Progress {
   studentName: string;
   studentClass: string;
   soundOn: boolean;
-  currentChunk: number; // 1..6
-  currentSection: number; // 0..3 (0=comprehension,1=grammar,2=expression,3=research)
+  currentChunk: number;
+  currentSection: number;
   flowStep:
     | "welcome"
     | "instructions"
     | "reading"
     | "section"
     | "results";
-  answers: Record<string, Record<string, AnswerValue>>; // sectionId -> qId -> value
+  answers: Record<string, Record<string, AnswerValue>>;
   expressionText: string;
   researchText: string;
   startedAt: number;
@@ -38,7 +38,9 @@ export const emptyProgress = (): Progress => ({
   startedAt: Date.now(),
   updatedAt: Date.now(),
   completedAt: null,
-  sessionId: crypto.randomUUID(),
+  sessionId: typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2),
 });
 
 let memoryStore: Progress = emptyProgress();
@@ -73,7 +75,10 @@ export const progressStore = {
   },
   set(updater: (p: Progress) => Progress) {
     if (!initialized) load();
-    memoryStore = updater(memoryStore);
+    const next = updater(memoryStore);
+    // Avoid useless writes if reference unchanged
+    if (next === memoryStore) return;
+    memoryStore = next;
     persist();
   },
   reset() {
@@ -106,32 +111,24 @@ export function useProgress(): Progress {
 }
 
 // =====================================================================
-// Analytics (localStorage fallback only — no backend dependency)
+// Analytics — only TWO accurate counters:
+//   - loggedIn (unique sessions that pressed "ابدأ")
+//   - completed (unique sessions that reached final results)
 // =====================================================================
-export type AnalyticsEvent =
-  | "session_started"
-  | "reading_started"
-  | "chunk_completed"
-  | "section_completed"
-  | "assessment_submitted"
-  | "pdf_downloaded";
-
 export interface AnalyticsRecord {
-  totalSessions: number;
-  totalReadingStarted: number;
-  totalAssessmentsCompleted: number;
-  totalPdfDownloads: number;
-  recent: { name: string; cls: string; event: AnalyticsEvent; at: number }[];
-  sessionIds: string[];
+  loggedIn: number;
+  completed: number;
+  loggedInSessions: string[];
+  completedSessions: string[];
+  recent: { name: string; cls: string; event: "logged_in" | "completed"; at: number }[];
 }
 
 const emptyAnalytics = (): AnalyticsRecord => ({
-  totalSessions: 0,
-  totalReadingStarted: 0,
-  totalAssessmentsCompleted: 0,
-  totalPdfDownloads: 0,
+  loggedIn: 0,
+  completed: 0,
+  loggedInSessions: [],
+  completedSessions: [],
   recent: [],
-  sessionIds: [],
 });
 
 export function readAnalytics(): AnalyticsRecord {
@@ -149,33 +146,44 @@ function writeAnalytics(a: AnalyticsRecord) {
   } catch {}
 }
 
-export function trackEvent(event: AnalyticsEvent, meta?: { name?: string; cls?: string; sessionId?: string }) {
-  if (typeof window === "undefined") return;
+export function trackLoggedIn(sessionId: string, name: string, cls: string) {
+  if (typeof window === "undefined" || !sessionId) return;
   const a = readAnalytics();
-  const sid = meta?.sessionId;
-  if (event === "session_started") {
-    if (sid && !a.sessionIds.includes(sid)) {
-      a.sessionIds.push(sid);
-      a.totalSessions += 1;
-    }
-  }
-  if (event === "reading_started") a.totalReadingStarted += 1;
-  if (event === "assessment_submitted") a.totalAssessmentsCompleted += 1;
-  if (event === "pdf_downloaded") a.totalPdfDownloads += 1;
-  a.recent.unshift({
-    name: meta?.name || "",
-    cls: meta?.cls || "",
-    event,
-    at: Date.now(),
-  });
+  if (a.loggedInSessions.includes(sessionId)) return;
+  a.loggedInSessions.push(sessionId);
+  a.loggedIn += 1;
+  a.recent.unshift({ name, cls, event: "logged_in", at: Date.now() });
   a.recent = a.recent.slice(0, 100);
   writeAnalytics(a);
+}
+
+export function trackCompleted(sessionId: string, name: string, cls: string) {
+  if (typeof window === "undefined" || !sessionId) return;
+  const a = readAnalytics();
+  if (a.completedSessions.includes(sessionId)) return;
+  a.completedSessions.push(sessionId);
+  a.completed += 1;
+  a.recent.unshift({ name, cls, event: "completed", at: Date.now() });
+  a.recent = a.recent.slice(0, 100);
+  writeAnalytics(a);
+}
+
+// Backwards-compatible no-op for legacy callers
+export function trackEvent(_event: string, _meta?: any) {
+  /* deprecated — only loggedIn / completed are tracked now */
 }
 
 export function useAnalytics() {
   const [data, setData] = useState<AnalyticsRecord>(() => readAnalytics());
   useEffect(() => {
-    const id = window.setInterval(() => setData(readAnalytics()), 1500);
+    const id = window.setInterval(() => {
+      const next = readAnalytics();
+      setData((prev) =>
+        prev.loggedIn === next.loggedIn && prev.completed === next.completed
+          ? prev
+          : next
+      );
+    }, 2000);
     return () => window.clearInterval(id);
   }, []);
   return data;

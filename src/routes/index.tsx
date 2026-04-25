@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { appTitle, lessonTitle } from "@/config/lessonText";
 import { team } from "@/config/team";
-import { progressStore, useAnalytics, trackEvent } from "@/lib/progress";
-import { Play, RefreshCw, Volume2, VolumeX, Users, BookOpen, Trophy } from "lucide-react";
+import { progressStore, useAnalytics, trackLoggedIn } from "@/lib/progress";
+import { Play, RefreshCw, Volume2, VolumeX, Users, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,9 +39,10 @@ function WelcomePage() {
       studentClass: cls.trim(),
       soundOn,
       flowStep: "instructions",
-      startedAt: Date.now(),
+      startedAt: p.startedAt || Date.now(),
     }));
-    trackEvent("session_started", { name: name.trim(), cls: cls.trim(), sessionId: progressStore.get().sessionId });
+    const sid = progressStore.get().sessionId;
+    trackLoggedIn(sid, name.trim(), cls.trim());
     navigate({ to: "/instructions" });
   };
 
@@ -147,17 +148,16 @@ function WelcomePage() {
             className="space-y-6"
           >
             <div className="glass-panel rounded-3xl p-6">
-              <h3 className="text-lg font-bold mb-4 gold-text">إعداد وتنفيذ</h3>
-              <div className="space-y-2 text-foreground/90">
+              <h3 className="text-lg font-bold mb-4 gold-text text-right">إعداد وتنفيذ - المهندسون</h3>
+              <div className="space-y-3 text-right" dir="rtl">
                 {team.preparedBy.map((p, i) => (
-                  <div key={i} className="flex justify-end gap-2 text-sm">
-                    <span className="text-muted-foreground">{p.role}:</span>
-                    <span className="font-semibold">{p.name}</span>
+                  <div key={i} className="font-semibold text-foreground/95 text-arabic-lg">
+                    {p.name}
                   </div>
                 ))}
                 {team.supervisor.name && (
-                  <div className="flex justify-between gap-2 text-sm pt-2 border-t border-border">
-                    <span className="text-muted-foreground">{team.supervisor.role}:</span>
+                  <div className="pt-3 mt-2 border-t border-border text-sm">
+                    <span className="text-muted-foreground">{team.supervisor.role}: </span>
                     <span className="font-semibold">{team.supervisor.name}</span>
                   </div>
                 )}
@@ -167,9 +167,8 @@ function WelcomePage() {
             <div className="glass-panel rounded-3xl p-6">
               <h3 className="text-lg font-bold mb-4 electric-text">الإحصاءات</h3>
               <div className="space-y-3">
-                <Stat icon={<Users className="w-4 h-4" />} label="الجلسات" value={analytics.totalSessions} />
-                <Stat icon={<BookOpen className="w-4 h-4" />} label="بدأوا القراءة" value={analytics.totalReadingStarted} />
-                <Stat icon={<Trophy className="w-4 h-4" />} label="أنهوا التّقييم" value={analytics.totalAssessmentsCompleted} />
+                <Stat icon={<Users className="w-4 h-4" />} label="عدد الدّاخلين إلى النّظام" value={analytics.loggedIn} />
+                <Stat icon={<Trophy className="w-4 h-4" />} label="عدد الّذين أنهوا التّقييم" value={analytics.completed} />
               </div>
             </div>
           </motion.div>
