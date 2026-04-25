@@ -148,7 +148,7 @@ function WelcomePage() {
             className="space-y-6"
           >
             <div className="glass-panel rounded-3xl p-6">
-              <h3 className="text-lg font-bold mb-4 gold-text text-right">إعداد وتنفيذ - المهندسون</h3>
+              <h3 className="text-lg font-bold mb-4 gold-text text-right">إعداد وتنفيذ المهندسون</h3>
               <div className="space-y-3 text-right" dir="rtl">
                 {team.preparedBy.map((p, i) => (
                   <div key={i} className="font-semibold text-foreground/95 text-arabic-lg">
