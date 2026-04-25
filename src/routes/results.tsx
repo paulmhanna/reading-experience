@@ -5,6 +5,7 @@ import { progressStore, useProgress } from "@/lib/progress";
 import { lessonAuthor, lessonTitle } from "@/config/lessonText";
 import { exportElementToPdf } from "@/lib/pdf";
 import { resolveAnswer } from "@/lib/answerResolver";
+import { PrintableReport } from "@/components/PrintableReport";
 import { Download, RotateCcw, Trophy, Check, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/results")({
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/results")({
 function ResultsPage() {
   const progress = useProgress();
   const navigate = useNavigate();
-  const reportRef = useRef<HTMLDivElement>(null);
+  const printableRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -34,7 +35,7 @@ function ResultsPage() {
 
   const onDownload = async () => {
     setErrorMsg(null);
-    if (!reportRef.current) {
+    if (!printableRef.current) {
       setErrorMsg("تعذّر تجهيز التّقرير. حاول مرّة أخرى.");
       return;
     }
@@ -42,10 +43,13 @@ function ResultsPage() {
     try {
       const safeName = (progress.studentName || "تلميذ").replace(/\s+/g, "_");
       const filename = `${safeName}_في_ملعب_كرة_السلة.pdf`;
-      await exportElementToPdf(reportRef.current, filename);
+      await exportElementToPdf(printableRef.current, filename);
     } catch (e: any) {
       console.error("[pdf] download failed:", e);
-      setErrorMsg("حدث خطأ أثناء توليد ملف PDF: " + (e?.message || "غير معروف"));
+      const raw = e?.message || "غير معروف";
+      setErrorMsg(
+        "حدث خطأ أثناء توليد ملف PDF. الرّجاء المحاولة مرّة أخرى. (" + raw + ")"
+      );
     } finally {
       setDownloading(false);
     }
@@ -85,7 +89,7 @@ function ResultsPage() {
           </div>
         )}
 
-        <div ref={reportRef} dir="rtl" className="space-y-6 bg-background/0">
+        <div dir="rtl" className="space-y-6 bg-background/0">
           {/* Header */}
           <div className="glass-panel rounded-3xl p-6 md:p-8 text-center">
             <Trophy className="w-12 h-12 mx-auto text-accent trophy-glow mb-3" />
@@ -172,6 +176,29 @@ function ResultsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Hidden PDF-safe printable report (off-screen) */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <PrintableReport
+          ref={printableRef}
+          studentName={progress.studentName}
+          studentClass={progress.studentClass}
+          sessionId={progress.sessionId}
+          sections={sections}
+          answers={progress.answers}
+          expressionText={progress.expressionText}
+          researchText={progress.researchText}
+        />
       </div>
     </div>
   );
