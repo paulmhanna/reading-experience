@@ -4,7 +4,7 @@ import { chunks, lessonAuthor } from "@/config/lessonText";
 import { ReadingTextWithVocab } from "@/components/ReadingTextWithVocab";
 import { SceneVisualStage } from "@/components/SceneVisualStage";
 import { AudioControls } from "@/components/AudioControls";
-import { progressStore, useProgress, trackEvent } from "@/lib/progress";
+import { progressStore, useProgress } from "@/lib/progress";
 
 export const Route = createFileRoute("/reading")({
   head: () => ({ meta: [{ title: "القراءة التّفاعليّة" }] }),
@@ -18,23 +18,16 @@ function ReadingPage() {
   const chunk = chunks[chunkIdx];
 
   useEffect(() => {
-    progressStore.set((p) => ({ ...p, flowStep: "reading", currentChunk: chunkIdx + 1 }));
-  }, [chunkIdx]);
-
-  useEffect(() => {
-    trackEvent("reading_started", {
-      name: progress.studentName,
-      cls: progress.studentClass,
-      sessionId: progress.sessionId,
+    progressStore.set((p) => {
+      if (p.flowStep === "reading" && p.currentChunk === chunkIdx + 1) return p;
+      return { ...p, flowStep: "reading", currentChunk: chunkIdx + 1 };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chunkIdx]);
 
   const onPrev = () => {
     if (chunkIdx > 0) setChunkIdx(chunkIdx - 1);
   };
   const onNext = () => {
-    trackEvent("chunk_completed", { name: progress.studentName, cls: progress.studentClass });
     if (chunkIdx < chunks.length - 1) {
       setChunkIdx(chunkIdx + 1);
     } else {
@@ -51,12 +44,10 @@ function ReadingPage() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Scene */}
           <div className="aspect-[4/3] lg:aspect-auto lg:h-[460px] xl:h-[540px]">
             <SceneVisualStage chunkId={chunk.id} />
           </div>
 
-          {/* Text */}
           <div className="glass-panel rounded-3xl p-6 md:p-8 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <span className="px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-bold">
