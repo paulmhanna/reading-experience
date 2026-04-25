@@ -150,7 +150,7 @@ function WelcomePage() {
               <h3 className="text-lg font-bold mb-4 gold-text">إعداد وتنفيذ</h3>
               <div className="space-y-2 text-foreground/90">
                 {team.preparedBy.map((p, i) => (
-                  <div key={i} className="flex justify-between gap-2 text-sm">
+                  <div key={i} className="flex justify-end gap-2 text-sm">
                     <span className="text-muted-foreground">{p.role}:</span>
                     <span className="font-semibold">{p.name}</span>
                   </div>
