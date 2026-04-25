@@ -177,6 +177,29 @@ function ResultsPage() {
           )}
         </div>
       </div>
+
+      {/* Hidden PDF-safe printable report (off-screen) */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <PrintableReport
+          ref={printableRef}
+          studentName={progress.studentName}
+          studentClass={progress.studentClass}
+          sessionId={progress.sessionId}
+          sections={sections}
+          answers={progress.answers}
+          expressionText={progress.expressionText}
+          researchText={progress.researchText}
+        />
+      </div>
     </div>
   );
 }
