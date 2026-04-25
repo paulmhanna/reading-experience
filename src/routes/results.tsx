@@ -5,6 +5,7 @@ import { progressStore, useProgress } from "@/lib/progress";
 import { lessonAuthor, lessonTitle } from "@/config/lessonText";
 import { exportElementToPdf } from "@/lib/pdf";
 import { resolveAnswer } from "@/lib/answerResolver";
+import { PrintableReport } from "@/components/PrintableReport";
 import { Download, RotateCcw, Trophy, Check, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/results")({
