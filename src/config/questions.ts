@@ -429,7 +429,7 @@ const section2: Section = {
     {
       id: "g3",
       type: "tableFill",
-      prompt: "املأ الفراغ بما يناسب:",
+      prompt: "املأ الفراغ بما يناسب، وحَرِّك آخِر الفِعْل:",
       tableColumns: ["الماضي", "المضارع المرفوع", "المضارع المجزوم", "الأمر"],
       tableRows: [
         {
