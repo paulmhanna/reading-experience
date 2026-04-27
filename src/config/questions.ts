@@ -230,7 +230,7 @@ const section1: Section = {
           prompt: "نوع الأفعال:",
           options: [
             { id: "a", label: "هي أفعال حركيّة", correct: true },
-            { id: "b", label: "هي أفعال ساكنة" },
+            { id: "b", label: "هي أفعال سكونية" },
           ],
         },
         {
