@@ -354,7 +354,7 @@ const section1: Section = {
       type: "single",
       prompt: "حدّد السّلوك الّذي تجلّت فيه الرّوح الرّياضيّة:",
       options: [
-        { id: "a", label: "تصافح اللاعبين المتنافسين", correct: true },
+        { id: "a", label: "تَصَافُحُ اللاعبين المتنافسين", correct: true },
         { id: "b", label: "الانتشار في الملعب" },
         { id: "c", label: "تحيّة الحاضرين" },
       ],
