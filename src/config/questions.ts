@@ -447,7 +447,7 @@ const section2: Section = {
     {
       id: "g4",
       type: "tokenCorrection",
-      prompt: "صرّف الفعل (التَقَطَ) مع الضّمائر المذكورة أدناه:",
+      prompt: "صرّف الفعل (التَقَطَ) مع الضّمائر المذكورة أدناه، وحَرِّك آخِر الفِعْل:",
       tokens: [
         { id: "ana", label: "أنا", expected: "أنا التقطتُ" },
         { id: "nahnu", label: "نحن", expected: "نحن التقطنا" },
