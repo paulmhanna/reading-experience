@@ -42,7 +42,7 @@ function WelcomePage() {
       startedAt: p.startedAt || Date.now(),
     }));
     const sid = progressStore.get().sessionId;
-    trackLoggedIn(sid, name.trim(), cls.trim());
+    void trackLoggedIn(sid, name.trim(), cls.trim());
     navigate({ to: "/instructions" });
   };
 
@@ -147,20 +147,29 @@ function WelcomePage() {
             transition={{ delay: 0.4, duration: 0.7 }}
             className="space-y-6"
           >
-            <div className="glass-panel rounded-3xl p-6">
-              <h3 className="text-lg font-bold mb-4 gold-text text-right">إعداد وتنفيذ المهندسون</h3>
-              <div className="space-y-3 text-right" dir="rtl">
-                {team.preparedBy.map((p, i) => (
-                  <div key={i} className="font-semibold text-foreground/95 text-arabic-lg">
-                    {p.name}
+            <div className="glass-panel rounded-3xl p-6 text-right" dir="rtl">
+              <div className="space-y-4 text-foreground/95">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">{team.academic.role}</div>
+                  <div className="font-bold text-arabic-lg gold-text">{team.academic.name}.</div>
+                  <a
+                    href={`mailto:${team.academic.email}`}
+                    className="text-sm text-accent hover:underline break-all"
+                  >
+                    {team.academic.email}
+                  </a>
+                </div>
+
+                <div className="pt-3 border-t border-border">
+                  <div className="text-sm text-muted-foreground mb-2">{team.technical.role}</div>
+                  <div className="space-y-1">
+                    {team.technical.members.map((m, i) => (
+                      <div key={i} className="font-semibold text-arabic-lg">
+                        {m.name}
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {team.supervisor.name && (
-                  <div className="pt-3 mt-2 border-t border-border text-sm">
-                    <span className="text-muted-foreground">{team.supervisor.role}: </span>
-                    <span className="font-semibold">{team.supervisor.name}</span>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -170,6 +179,11 @@ function WelcomePage() {
                 <Stat icon={<Users className="w-4 h-4" />} label="عدد الدّاخلين إلى النّظام" value={analytics.loggedIn} />
                 <Stat icon={<Trophy className="w-4 h-4" />} label="عدد الّذين أنهوا التّقييم" value={analytics.completed} />
               </div>
+              {analytics.fallback && (
+                <div className="mt-3 text-xs text-destructive/90">
+                  تعذّر الاتّصال بالخادم — الأرقام المعروضة قد لا تكون محدّثة.
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
