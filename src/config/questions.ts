@@ -837,6 +837,30 @@ export function gradeFreeText(q: Question, given: string | undefined): QuestionS
   return { questionId: q.id, earned: Math.round(ratio * max * 10) / 10, max };
 }
 
+import { gradeCorrectedWords, endingsMatch } from "@/lib/correctedWords";
+
+export function gradeCorrectedWordsQ(q: Question, given: string | undefined): QuestionScore {
+  const expected = q.expectedWords || [];
+  const r = gradeCorrectedWords(expected, given);
+  return { questionId: q.id, earned: r.earned, max: r.max };
+}
+
+export function gradeFinalHarakaTokens(
+  q: Question,
+  given: Record<string, string> = {}
+): QuestionScore {
+  const tokens = q.tokens || [];
+  const detail: QuestionScore["detail"] = {};
+  let earned = 0;
+  for (const t of tokens) {
+    const g = (given[t.id] || "").trim();
+    const ok = !!g && endingsMatch(g, t.expected);
+    if (ok) earned += 1;
+    detail[t.id] = { ok, given: g, expected: t.expected };
+  }
+  return { questionId: q.id, earned, max: tokens.length, detail };
+}
+
 export function gradeQuestion(q: Question, given: AnswerValue): QuestionScore {
   switch (q.type) {
     case "single":
@@ -851,6 +875,10 @@ export function gradeQuestion(q: Question, given: AnswerValue): QuestionScore {
       return gradeTableFill(q, (given as any) || {});
     case "freeText":
       return gradeFreeText(q, given as string);
+    case "correctedWords":
+      return gradeCorrectedWordsQ(q, given as string);
+    case "finalHarakaTokens":
+      return gradeFinalHarakaTokens(q, (given as any) || {});
     default:
       return { questionId: q.id, earned: 0, max: 0 };
   }
