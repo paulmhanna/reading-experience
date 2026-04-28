@@ -1,9 +1,16 @@
-// Edit team / engineers shown on the welcome page here.
+// Credits shown on the welcome page.
 export const team = {
-  preparedBy: [
-    { role: "إعداد وتنفيذ", name: "م. بول حنّا" },
-    { role: "إعداد وتنفيذ", name: "م. غالينا عاقوري" },
-  ],
-  supervisor: { role: "بإشراف", name: "" }, // اختياري
+  academic: {
+    role: "الإعداد الأكاديميّ",
+    name: "البروفسور ميشال فارس حنّا",
+    email: "michelhanna21@hotmail.com",
+  },
+  technical: {
+    role: "الإعداد التّقنيّ",
+    members: [
+      { name: "المهندس بول حنّا" },
+      { name: "المهندسة غالينا عاقوري" },
+    ],
+  },
   author: "د. ميشال فارس حنّا",
 };
