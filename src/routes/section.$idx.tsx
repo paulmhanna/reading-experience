@@ -4,6 +4,7 @@ import { sections } from "@/config/questions";
 import { fullText, lessonAuthor, lessonTitle } from "@/config/lessonText";
 import { QuestionRenderer } from "@/components/QuestionRenderer";
 import { progressStore, useProgress, trackCompleted } from "@/lib/progress";
+import { SaveExitButton } from "@/components/SaveExitButton";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/section/$idx")({
@@ -55,7 +56,7 @@ function SectionPage() {
     } else {
       progressStore.set((p) => ({ ...p, completedAt: p.completedAt || Date.now(), flowStep: "results" }));
       const sid = progressStore.get().sessionId;
-      trackCompleted(sid, progress.studentName, progress.studentClass);
+      void trackCompleted(sid, progress.studentName, progress.studentClass);
       navigate({ to: "/results" });
     }
   };
@@ -63,7 +64,10 @@ function SectionPage() {
   return (
     <div className="min-h-screen stadium-bg">
       <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← الرّئيسيّة</Link>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← الرّئيسيّة</Link>
+          <SaveExitButton />
+        </div>
 
         <div className="mt-4 mb-6 flex items-center justify-between flex-wrap gap-3">
           <h1 className="text-3xl md:text-4xl font-extrabold gold-text">{section.title}</h1>
