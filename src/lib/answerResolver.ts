@@ -113,9 +113,39 @@ export function resolveAnswer(q: Question, given: any): ResolvedAnswerLine[] {
           label: "",
           given: (given || "").toString().trim() || "— لم يُجَب —",
           correct: q.expected || "",
-          ok: "partial", // graded by token overlap; show as informational
+          ok: "partial",
         },
       ];
+    }
+    case "correctedWords": {
+      const expected = q.expectedWords || [];
+      const studentText = (given || "").toString().trim();
+      const r = gradeCorrectedWords(expected, studentText);
+      const lines: ResolvedAnswerLine[] = [
+        {
+          label: "إجابة التّلميذ",
+          given: studentText || "— لم يُجَب —",
+          correct: expected.join("، "),
+          ok: r.earned === r.max && r.max > 0 ? true : r.earned > 0 ? "partial" : false,
+        },
+      ];
+      if (r.matched.length) {
+        lines.push({ label: "كلمات صحيحة", given: r.matched.join("، "), correct: "—", ok: true });
+      }
+      if (r.missing.length) {
+        lines.push({ label: "كلمات لم يكتبها", given: r.missing.join("، "), correct: "—", ok: false });
+      }
+      if (r.extras.length) {
+        lines.push({ label: "كلمات زائدة (أنقصت العلامة)", given: r.extras.join("، "), correct: "—", ok: false });
+      }
+      return lines;
+    }
+    case "finalHarakaTokens": {
+      return (q.tokens || []).map((t) => {
+        const g = (given?.[t.id] || "").trim();
+        const ok = !!g && endingsMatch(g, t.expected);
+        return { label: t.label, given: g || "— لم يُجَب —", correct: t.expected, ok };
+      });
     }
     case "longText":
     default:
