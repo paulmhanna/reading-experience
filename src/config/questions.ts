@@ -20,7 +20,9 @@ export type QuestionType =
   | "freeText" // ungraded or per-token grading
   | "tokenCorrection" // multiple input fields, exact-match per token
   | "tableFill"
-  | "longText";
+  | "longText"
+  | "correctedWords" // single textarea: list of expected corrected words
+  | "finalHarakaTokens"; // multiple inputs: grade only by final haraka of each target word
 
 export interface SubQuestion {
   id: string;
@@ -43,6 +45,8 @@ export interface Question {
   tableRows?: { id: string; label: string; cells: { col: string; expected: string; given?: string }[] }[];
   // Free text expected (used as guidance/show after submit)
   expected?: string;
+  // For correctedWords questions
+  expectedWords?: string[];
   // Maximum points (defaults: 1 for single, options.filter(correct).length for multi, etc.)
   maxPoints?: number;
 }
