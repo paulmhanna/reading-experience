@@ -1,6 +1,7 @@
 // Helpers to resolve student answers + correct answers into readable Arabic strings
 // for the report (UI + PDF).
 import type { Question, Section } from "@/config/questions";
+import { gradeCorrectedWords, endingsMatch } from "@/lib/correctedWords";
 
 function optLabel(q: Question | { options?: any[] }, id: string | undefined): string {
   if (!id) return "";
