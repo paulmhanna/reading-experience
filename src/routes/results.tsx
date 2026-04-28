@@ -6,6 +6,7 @@ import { lessonAuthor, lessonTitle } from "@/config/lessonText";
 import { exportElementToPdf } from "@/lib/pdf";
 import { resolveAnswer } from "@/lib/answerResolver";
 import { PrintableReport } from "@/components/PrintableReport";
+import { SaveExitButton } from "@/components/SaveExitButton";
 import { Download, RotateCcw, Trophy, Check, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/results")({
@@ -65,7 +66,8 @@ function ResultsPage() {
       <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← الرّئيسيّة</Link>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            <SaveExitButton />
             <button
               onClick={onDownload}
               disabled={downloading}

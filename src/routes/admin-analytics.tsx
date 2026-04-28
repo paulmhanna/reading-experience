@@ -17,20 +17,10 @@ function AdminPage() {
           <Card label="عدد الدّاخلين إلى النّظام" value={a.loggedIn} />
           <Card label="عدد الّذين أنهوا التّقييم" value={a.completed} />
         </div>
-        <div className="glass-panel rounded-2xl p-5">
-          <h2 className="text-lg font-bold mb-4 electric-text">آخر النّشاطات</h2>
-          <div className="space-y-2">
-            {a.recent.length === 0 && <div className="text-muted-foreground text-sm">لا يوجد نشاط بعد.</div>}
-            {a.recent.map((r, i) => (
-              <div key={i} className="flex items-center justify-between text-sm border-b border-border pb-2">
-                <span className="font-semibold">{r.name || "مجهول"} {r.cls && `— ${r.cls}`}</span>
-                <span className="text-accent">
-                  {r.event === "logged_in" ? "دخول" : "إنهاء التّقييم"}
-                </span>
-                <span className="text-muted-foreground">{new Date(r.at).toLocaleString("ar")}</span>
-              </div>
-            ))}
-          </div>
+        <div className="glass-panel rounded-2xl p-5 text-sm text-muted-foreground">
+          {a.fallback
+            ? "تعذّر الاتّصال بالخادم. الأرقام المعروضة قد تكون غير محدّثة."
+            : "العدّادات مشتركة بين جميع الأجهزة."}
         </div>
       </div>
     </div>

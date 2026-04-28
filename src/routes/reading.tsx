@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { chunks, lessonAuthor } from "@/config/lessonText";
 import { ReadingTextWithVocab } from "@/components/ReadingTextWithVocab";
 import { SceneVisualStage } from "@/components/SceneVisualStage";
 import { AudioControls } from "@/components/AudioControls";
 import { progressStore, useProgress } from "@/lib/progress";
+import { SaveExitButton } from "@/components/SaveExitButton";
 
 export const Route = createFileRoute("/reading")({
   head: () => ({ meta: [{ title: "القراءة التّفاعليّة" }] }),
@@ -39,8 +40,14 @@ function ReadingPage() {
   return (
     <div className="min-h-screen stadium-bg">
       <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
-        <div className="text-sm text-muted-foreground mb-2">
-          {progress.studentName} — {progress.studentClass}
+        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <div className="text-sm text-muted-foreground">
+            {progress.studentName} — {progress.studentClass}
+          </div>
+          <div className="flex items-center gap-2">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← الرّئيسيّة</Link>
+            <SaveExitButton />
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">

@@ -20,7 +20,9 @@ export type QuestionType =
   | "freeText" // ungraded or per-token grading
   | "tokenCorrection" // multiple input fields, exact-match per token
   | "tableFill"
-  | "longText";
+  | "longText"
+  | "correctedWords" // single textarea: list of expected corrected words
+  | "finalHarakaTokens"; // multiple inputs: grade only by final haraka of each target word
 
 export interface SubQuestion {
   id: string;
@@ -43,6 +45,8 @@ export interface Question {
   tableRows?: { id: string; label: string; cells: { col: string; expected: string; given?: string }[] }[];
   // Free text expected (used as guidance/show after submit)
   expected?: string;
+  // For correctedWords questions
+  expectedWords?: string[];
   // Maximum points (defaults: 1 for single, options.filter(correct).length for multi, etc.)
   maxPoints?: number;
 }
@@ -407,14 +411,12 @@ const section2: Section = {
   questions: [
     {
       id: "g1",
-      type: "tokenCorrection",
-      prompt: "عُد إلى النّصّ ثمّ صحّح الأخطاء الواردة في الجمل الآتية: (اكتب الكلمة التي صححتها فقط، لا تكتب الجملة كلها)",
+      type: "correctedWords",
+      prompt:
+        "عُد إلى النّصّ ثمّ صحّح الأخطاء الواردة في الجمل الآتية. (اكتب الكلمات المصحَّحة فقط، لا تكتب الجمل كلّها — افصل بين الكلمات بمسافة أو فاصلة)",
       context: "دخل لاعبوا فريقنا – فهبّ مشجعيه لاستقباله – ثم انتشرو في الملعب.",
-      tokens: [
-        { id: "p1", label: "الجملة 1", expected: "دخل لاعبو فريقنا", help: "صحّح: لاعبوا → لاعبو" },
-        { id: "p2", label: "الجملة 2", expected: "فهبّ مشجعوه لاستقباله", help: "صحّح: مشجعيه → مشجّعوه" },
-        { id: "p3", label: "الجملة 3", expected: "ثم انتشروا في الملعب", help: "صحّح: انتشرو → انتشروا" },
-      ],
+      expectedWords: ["لاعبو", "مشجعوه", "انتشروا"],
+      maxPoints: 3,
     },
     {
       id: "g2",
@@ -423,7 +425,7 @@ const section2: Section = {
       context:
         "دخل اللاعبون بقاماتهم الرّشيقة الّتي تخطف الأنظار، ثابتي الخطى، مرتدين الثّياب الملوّنة، فاستقبلناهم بالهتافات الصّاخبة.",
       expected:
-        "دخل اللاعبُ بقامتِهِ الرّشيقةِ الّتي تخطفُ الأنظارَ، ثابتَ الخطى، مرتديًا الثّيابَ الملوّنةَ، فاستقبلتُهُ بالهتافِ الصّاخبِ.",
+        "دخل اللاعب بقامته الرّشيقة التي تخطف الأنظار، ثابت الخطى، مرتديا الثياب الملونة، فاستقبلته بالهتاف الصاخب.",
       maxPoints: 6,
     },
     {
@@ -458,37 +460,40 @@ const section2: Section = {
     },
     {
       id: "g5",
-      type: "freeText",
-      prompt: "صحّح الأخطاء الواردة في المقطع الآتي، اكتب الكلمة التي تصححها فقط من دون غيرها:",
+      type: "correctedWords",
+      prompt: "صحّح الأخطاء الواردة في المقطع الآتي. اكتب الكلمات المصحَّحة فقط من دون غيرها (افصل بينها بمسافة أو فاصلة):",
       context:
         "عاد اللاعبين من المباراة فرحين، فهنّأهم المسؤولين، ثم راحوا يُقَدِّموا لهم الجوائز القيّمة. أمّا لاعبوا الفريق الآخر فقد عادوا مخذولون، ولم يحظون سوى بالخيبة.",
-      expected:
-        "عاد اللاعبون من المباراة فرحين، فهنّأهم المسؤولون، ثم راحوا يُقَدِّمون لهم الجوائز القيّمة. أمّا لاعبو الفريق الآخر فقد عادوا مخذولين، ولم يحظوا سوى بالخيبة.",
+      expectedWords: [
+        "اللاعبون",
+        "المسؤولون",
+        "يقدمون",
+        "لاعبو",
+        "مخذولين",
+        "يحظوا",
+      ],
       maxPoints: 6,
     },
     {
       id: "g6",
-      type: "tokenCorrection",
+      type: "finalHarakaTokens",
       prompt:
-        "اضبط بالحركات المناسبة أواخر الكلمات في المقطع الآتي. اكتب كلّ كلمة مضبوطة بالحركات في حقلها، لا تحرك سوى الحرف الأخير وانتبه لكتابة الشدة:",
+        "اضبط الحرف الأخير فقط من كلّ كلمة من الكلمات الآتية (لا داعي لضبط الحروف الدّاخليّة، ولا داعي للشدّة):",
       context:
-        "وهكذا، بعد أن سكنت حركة الكرة، التقط قائد فريقنا كأس البطولة الباردة بقبضته الحارة، ثم قبلها، ورفعها فوق رأسه...",
+        "وهكذا، بعد أن سكنتْ حركةُ الكرةِ، التقطَ قائدُ فريقنا كأسَ البطولةِ الباردةَ بقبضتهِ الحارةِ، ثم قبلها، ورفعها فوقَ رأسهِ...",
       tokens: [
-        { id: "t1", label: "سكنت", expected: "سَكَنَتْ" },
+        { id: "t1", label: "سكنت", expected: "سكنتْ" },
         { id: "t2", label: "حركة", expected: "حركةُ" },
-        { id: "t3", label: "الكرة", expected: "الكُرَةِ" },
+        { id: "t3", label: "الكرة", expected: "الكرةِ" },
         { id: "t4", label: "التقط", expected: "التقطَ" },
         { id: "t5", label: "قائد", expected: "قائدُ" },
-        { id: "t6", label: "فريقنا", expected: "فريقِنا" },
-        { id: "t7", label: "كأس", expected: "كأسَ" },
-        { id: "t8", label: "البطولة", expected: "البطولةِ" },
-        { id: "t9", label: "الباردة", expected: "الباردةَ" },
-        { id: "t10", label: "بقبضته", expected: "بقبضتِهِ" },
-        { id: "t11", label: "الحارة", expected: "الحارّةِ" },
-        { id: "t12", label: "قبلها", expected: "قبّلَها" },
-        { id: "t13", label: "رفعها", expected: "رفعَها" },
-        { id: "t14", label: "فوق", expected: "فوقَ" },
-        { id: "t15", label: "رأسه", expected: "رأسِهِ" },
+        { id: "t6", label: "كأس", expected: "كأسَ" },
+        { id: "t7", label: "البطولة", expected: "البطولةِ" },
+        { id: "t8", label: "الباردة", expected: "الباردةَ" },
+        { id: "t9", label: "بقبضته", expected: "بقبضتهِ" },
+        { id: "t10", label: "الحارة", expected: "الحارةِ" },
+        { id: "t11", label: "فوق", expected: "فوقَ" },
+        { id: "t12", label: "رأسه", expected: "رأسهِ" },
       ],
     },
     {
@@ -632,13 +637,31 @@ const section2: Section = {
     },
     {
       id: "g11",
-      type: "freeText",
-      prompt: "صحّح الأخطاء الإملائيّة الواردة في المقطع الآتي، اكتب في الإجابة الكلمات المصححة فقط من دون غيرها ولا تحرك:",
+      type: "correctedWords",
+      prompt: "صحّح الأخطاء الإملائيّة الواردة في المقطع الآتي. اكتب في الإجابة الكلمات المصحَّحة فقط من دون غيرها (افصل بينها بمسافة أو فاصلة):",
       context:
         "إنّ صديقي فتى مأمن يؤدي الواجباة الدينية بدقة وانتظامن. غير أنه بطيئ في تأدية واجباته المدرسية، وكل درس، بالنسبة إليه، عِبئ ثقيل. أتمنى له اتوفيق في شؤنه اليومية.",
-      expected:
-        "إنّ صديقي فتى مؤمن يؤدّي الواجبات الدّينيّة بدقّة وانتظام. غير أنّه بطيء في تأدية واجباته المدرسيّة، وكلّ درس، بالنّسبة إليه، عبء ثقيل. أتمنّى له التّوفيق في شؤونه اليوميّة.",
-      maxPoints: 6,
+      expectedWords: [
+        "فتى",
+        "مؤمن",
+        "يؤدي",
+        "الواجبات",
+        "الدينية",
+        "بدقة",
+        "وانتظام",
+        "أنه",
+        "بطيء",
+        "تأدية",
+        "واجباته",
+        "المدرسية",
+        "درس",
+        "عبء",
+        "أتمنى",
+        "التوفيق",
+        "شؤونه",
+        "اليومية",
+      ],
+      maxPoints: 18,
     },
   ],
 };
@@ -814,6 +837,30 @@ export function gradeFreeText(q: Question, given: string | undefined): QuestionS
   return { questionId: q.id, earned: Math.round(ratio * max * 10) / 10, max };
 }
 
+import { gradeCorrectedWords, endingsMatch } from "@/lib/correctedWords";
+
+export function gradeCorrectedWordsQ(q: Question, given: string | undefined): QuestionScore {
+  const expected = q.expectedWords || [];
+  const r = gradeCorrectedWords(expected, given);
+  return { questionId: q.id, earned: r.earned, max: r.max };
+}
+
+export function gradeFinalHarakaTokens(
+  q: Question,
+  given: Record<string, string> = {}
+): QuestionScore {
+  const tokens = q.tokens || [];
+  const detail: QuestionScore["detail"] = {};
+  let earned = 0;
+  for (const t of tokens) {
+    const g = (given[t.id] || "").trim();
+    const ok = !!g && endingsMatch(g, t.expected);
+    if (ok) earned += 1;
+    detail[t.id] = { ok, given: g, expected: t.expected };
+  }
+  return { questionId: q.id, earned, max: tokens.length, detail };
+}
+
 export function gradeQuestion(q: Question, given: AnswerValue): QuestionScore {
   switch (q.type) {
     case "single":
@@ -828,6 +875,10 @@ export function gradeQuestion(q: Question, given: AnswerValue): QuestionScore {
       return gradeTableFill(q, (given as any) || {});
     case "freeText":
       return gradeFreeText(q, given as string);
+    case "correctedWords":
+      return gradeCorrectedWordsQ(q, given as string);
+    case "finalHarakaTokens":
+      return gradeFinalHarakaTokens(q, (given as any) || {});
     default:
       return { questionId: q.id, earned: 0, max: 0 };
   }
