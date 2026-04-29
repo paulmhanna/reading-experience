@@ -850,9 +850,15 @@ export function gradeFinalHarakaTokens(
   let earned = 0;
   for (const t of tokens) {
     const g = (given[t.id] || "").trim();
-    const ok = !!g && endingsMatch(g, t.expected);
+    let ok = false;
+    if (t.targetHaraka) {
+      // Student's stored answer is the chosen haraka character.
+      ok = g === t.targetHaraka;
+    } else {
+      ok = !!g && endingsMatch(g, t.expected);
+    }
     if (ok) earned += 1;
-    detail[t.id] = { ok, given: g, expected: t.expected };
+    detail[t.id] = { ok, given: g, expected: t.targetHaraka || t.expected };
   }
   return { questionId: q.id, earned, max: tokens.length, detail };
 }
