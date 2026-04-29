@@ -39,8 +39,10 @@ export interface Question {
   context?: string;
   options?: Option[];
   subs?: SubQuestion[];
-  // For tokenCorrection / tableFill
-  tokens?: { id: string; label: string; expected: string; help?: string }[];
+  // For tokenCorrection / tableFill / finalHarakaTokens
+  // For finalHarakaTokens: targetHaraka is the required final-haraka char; targetLetter is the
+  // displayed letter the haraka belongs to (for UI hint only).
+  tokens?: { id: string; label: string; expected: string; help?: string; targetHaraka?: string; targetLetter?: string }[];
   tableColumns?: string[];
   tableRows?: { id: string; label: string; cells: { col: string; expected: string; given?: string }[] }[];
   // Free text expected (used as guidance/show after submit)
@@ -478,22 +480,25 @@ const section2: Section = {
       id: "g6",
       type: "finalHarakaTokens",
       prompt:
-        "اضبط الحرف الأخير فقط من كلّ كلمة من الكلمات الآتية (لا داعي لضبط الحروف الدّاخليّة، ولا داعي للشدّة):",
+        "اضبط الحرف الأخير فقط من كلّ كلمة من الكلمات الآتية (لا داعي لضبط الحروف الدّاخليّة):",
       context:
-        "وهكذا، بعد أن سكنتْ حركةُ الكرةِ، التقطَ قائدُ فريقنا كأسَ البطولةِ الباردةَ بقبضتهِ الحارةِ، ثم قبلها، ورفعها فوقَ رأسهِ...",
+        "وهكذا، بعد أن سكنت حركة الكرة، التقط قائد فريقنا كأس البطولة الباردة بقبضته الحارة، ثم قبلها، ورفعها فوق رأسه...",
       tokens: [
-        { id: "t1", label: "سكنت", expected: "سكنتْ" },
-        { id: "t2", label: "حركة", expected: "حركةُ" },
-        { id: "t3", label: "الكرة", expected: "الكرةِ" },
-        { id: "t4", label: "التقط", expected: "التقطَ" },
-        { id: "t5", label: "قائد", expected: "قائدُ" },
-        { id: "t6", label: "كأس", expected: "كأسَ" },
-        { id: "t7", label: "البطولة", expected: "البطولةِ" },
-        { id: "t8", label: "الباردة", expected: "الباردةَ" },
-        { id: "t9", label: "بقبضته", expected: "بقبضتهِ" },
-        { id: "t10", label: "الحارة", expected: "الحارةِ" },
-        { id: "t11", label: "فوق", expected: "فوقَ" },
-        { id: "t12", label: "رأسه", expected: "رأسهِ" },
+        { id: "t1", label: "سكنت", expected: "سكنَت", targetHaraka: "َ", targetLetter: "ن" },
+        { id: "t2", label: "حركة", expected: "حركةُ", targetHaraka: "ُ", targetLetter: "ة" },
+        { id: "t3", label: "الكرة", expected: "الكرةِ", targetHaraka: "ِ", targetLetter: "ة" },
+        { id: "t4", label: "التقط", expected: "التقطَ", targetHaraka: "َ", targetLetter: "ط" },
+        { id: "t5", label: "قائد", expected: "قائدُ", targetHaraka: "ُ", targetLetter: "د" },
+        { id: "t6", label: "فريقنا", expected: "فريقِنا", targetHaraka: "ِ", targetLetter: "ق" },
+        { id: "t7", label: "كأس", expected: "كأسَ", targetHaraka: "َ", targetLetter: "س" },
+        { id: "t8", label: "البطولة", expected: "البطولةِ", targetHaraka: "ِ", targetLetter: "ة" },
+        { id: "t9", label: "الباردة", expected: "الباردةَ", targetHaraka: "َ", targetLetter: "ة" },
+        { id: "t10", label: "بقبضته", expected: "بقبضتِهِ", targetHaraka: "ِ", targetLetter: "ة" },
+        { id: "t11", label: "الحارة", expected: "الحارةِ", targetHaraka: "ِ", targetLetter: "ة" },
+        { id: "t12", label: "قبلها", expected: "قبلَها", targetHaraka: "َ", targetLetter: "ل" },
+        { id: "t13", label: "رفعها", expected: "رفعَها", targetHaraka: "َ", targetLetter: "ع" },
+        { id: "t14", label: "فوق", expected: "فوقَ", targetHaraka: "َ", targetLetter: "ق" },
+        { id: "t15", label: "رأسه", expected: "رأسِهِ", targetHaraka: "ِ", targetLetter: "س" },
       ],
     },
     {
@@ -644,24 +649,15 @@ const section2: Section = {
       expectedWords: [
         "فتى",
         "مؤمن",
-        "يؤدي",
+        "يؤدّي",
         "الواجبات",
-        "الدينية",
-        "بدقة",
-        "وانتظام",
-        "أنه",
+        "انتظام",
         "بطيء",
-        "تأدية",
-        "واجباته",
-        "المدرسية",
-        "درس",
         "عبء",
-        "أتمنى",
-        "التوفيق",
+        "التّوفيق",
         "شؤونه",
-        "اليومية",
       ],
-      maxPoints: 18,
+      maxPoints: 9,
     },
   ],
 };
@@ -854,9 +850,15 @@ export function gradeFinalHarakaTokens(
   let earned = 0;
   for (const t of tokens) {
     const g = (given[t.id] || "").trim();
-    const ok = !!g && endingsMatch(g, t.expected);
+    let ok = false;
+    if (t.targetHaraka) {
+      // Student's stored answer is the chosen haraka character.
+      ok = g === t.targetHaraka;
+    } else {
+      ok = !!g && endingsMatch(g, t.expected);
+    }
     if (ok) earned += 1;
-    detail[t.id] = { ok, given: g, expected: t.expected };
+    detail[t.id] = { ok, given: g, expected: t.targetHaraka || t.expected };
   }
   return { questionId: q.id, earned, max: tokens.length, detail };
 }

@@ -142,8 +142,30 @@ export function resolveAnswer(q: Question, given: any): ResolvedAnswerLine[] {
       return lines;
     }
     case "finalHarakaTokens": {
+      const harakaName = (h: string) => {
+        switch (h) {
+          case "َ": return "فَتْحَة (◌َ)";
+          case "ُ": return "ضَمَّة (◌ُ)";
+          case "ِ": return "كَسْرَة (◌ِ)";
+          case "ْ": return "سُكُون (◌ْ)";
+          case "ً": return "تنوين فَتْح (◌ً)";
+          case "ٌ": return "تنوين ضَمّ (◌ٌ)";
+          case "ٍ": return "تنوين كَسْر (◌ٍ)";
+          default: return h || "—";
+        }
+      };
       return (q.tokens || []).map((t) => {
         const g = (given?.[t.id] || "").trim();
+        if (t.targetHaraka) {
+          const ok = g === t.targetHaraka;
+          const lbl = t.targetLetter ? `${t.label}  (الحرف: ${t.targetLetter})` : t.label;
+          return {
+            label: lbl,
+            given: g ? harakaName(g) : "— لم يُجَب —",
+            correct: harakaName(t.targetHaraka),
+            ok,
+          };
+        }
         const ok = !!g && endingsMatch(g, t.expected);
         return { label: t.label, given: g || "— لم يُجَب —", correct: t.expected, ok };
       });

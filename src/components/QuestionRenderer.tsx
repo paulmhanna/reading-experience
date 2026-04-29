@@ -64,7 +64,7 @@ function QuestionBlock({
       {q.type === "multi" && <MultiChoice q={q} value={value || []} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "subgroup" && <Subgroup q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "tokenCorrection" && <TokenCorrection q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
-      {q.type === "finalHarakaTokens" && <TokenCorrection q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
+      {q.type === "finalHarakaTokens" && <FinalHarakaTokens q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "tableFill" && <TableFill q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "freeText" && <FreeText q={q} value={value || ""} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "correctedWords" && <FreeText q={q} value={value || ""} onChange={onChange} showCorrection={showCorrection} />}
@@ -201,6 +201,110 @@ function TokenCorrection({ q, value, onChange, showCorrection }: any) {
               <span className="text-sm text-accent/90 md:w-64">
                 الصواب: <strong className="gold-text">{t.expected}</strong>
               </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const HARAKA_OPTIONS: { ch: string; label: string }[] = [
+  { ch: "َ", label: "ـَ" },
+  { ch: "ُ", label: "ـُ" },
+  { ch: "ِ", label: "ـِ" },
+  { ch: "ْ", label: "ـْ" },
+  { ch: "ً", label: "ـً" },
+  { ch: "ٌ", label: "ـٌ" },
+  { ch: "ٍ", label: "ـٍ" },
+];
+
+function FinalHarakaTokens({ q, value, onChange, showCorrection }: any) {
+  // Each token: pick exactly one haraka to apply to the target letter (or word end).
+  return (
+    <div className="space-y-3">
+      {q.tokens.map((t: any) => {
+        const chosen: string = value[t.id] || "";
+        const expected: string = t.targetHaraka || "";
+        const isOk = showCorrection && chosen && chosen === expected;
+        const isWrong = showCorrection && chosen !== expected;
+
+        // Build a visual: word with chosen haraka applied to the target letter (last occurrence).
+        const renderWord = () => {
+          const word: string = t.label;
+          const targetLetter: string | undefined = t.targetLetter;
+          if (!chosen) return word;
+          if (targetLetter && word.includes(targetLetter)) {
+            const idx = word.lastIndexOf(targetLetter);
+            return word.slice(0, idx + 1) + chosen + word.slice(idx + 1);
+          }
+          return word + chosen;
+        };
+
+        return (
+          <div
+            key={t.id}
+            className={`p-3 rounded-xl border-2 transition ${
+              showCorrection
+                ? isOk
+                  ? "border-success bg-success/10"
+                  : "border-destructive bg-destructive/10"
+                : "border-border bg-secondary/30"
+            }`}
+          >
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <span className="text-arabic-lg font-bold min-w-[7rem] text-right">
+                {renderWord()}
+              </span>
+              {t.targetLetter && (
+                <span className="text-xs text-muted-foreground">
+                  الحرف الأخير: <strong className="gold-text">{t.targetLetter}</strong>
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {HARAKA_OPTIONS.map((opt) => {
+                const selected = chosen === opt.ch;
+                const isCorrectOpt = showCorrection && opt.ch === expected;
+                let cls =
+                  "px-3 py-1.5 rounded-lg border-2 text-arabic-lg font-bold transition cursor-pointer min-w-[3rem]";
+                if (showCorrection) {
+                  if (isCorrectOpt) cls += " border-success bg-success/15";
+                  else if (selected) cls += " border-destructive bg-destructive/15";
+                  else cls += " border-border bg-secondary/30 opacity-60";
+                } else {
+                  cls += selected
+                    ? " border-primary bg-primary/15"
+                    : " border-border bg-secondary/40 hover:bg-secondary/60";
+                }
+                return (
+                  <button
+                    key={opt.ch}
+                    type="button"
+                    disabled={showCorrection}
+                    onClick={() => onChange({ ...value, [t.id]: opt.ch })}
+                    className={cls}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+              {!showCorrection && chosen && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...value, [t.id]: "" })}
+                  className="px-3 py-1.5 rounded-lg border-2 border-border bg-secondary/30 hover:bg-secondary/50 text-sm"
+                >
+                  مَسْح
+                </button>
+              )}
+            </div>
+            {showCorrection && (
+              <div className="text-xs text-accent/90 mt-2">
+                الصّواب: <strong className="gold-text">
+                  {HARAKA_OPTIONS.find((o) => o.ch === expected)?.label || expected}
+                </strong>
+              </div>
             )}
           </div>
         );
