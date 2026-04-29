@@ -39,8 +39,10 @@ export interface Question {
   context?: string;
   options?: Option[];
   subs?: SubQuestion[];
-  // For tokenCorrection / tableFill
-  tokens?: { id: string; label: string; expected: string; help?: string }[];
+  // For tokenCorrection / tableFill / finalHarakaTokens
+  // For finalHarakaTokens: targetHaraka is the required final-haraka char; targetLetter is the
+  // displayed letter the haraka belongs to (for UI hint only).
+  tokens?: { id: string; label: string; expected: string; help?: string; targetHaraka?: string; targetLetter?: string }[];
   tableColumns?: string[];
   tableRows?: { id: string; label: string; cells: { col: string; expected: string; given?: string }[] }[];
   // Free text expected (used as guidance/show after submit)
