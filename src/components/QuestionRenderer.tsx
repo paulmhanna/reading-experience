@@ -64,7 +64,7 @@ function QuestionBlock({
       {q.type === "multi" && <MultiChoice q={q} value={value || []} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "subgroup" && <Subgroup q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "tokenCorrection" && <TokenCorrection q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
-      {q.type === "finalHarakaTokens" && <TokenCorrection q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
+      {q.type === "finalHarakaTokens" && <FinalHarakaTokens q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "tableFill" && <TableFill q={q} value={value || {}} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "freeText" && <FreeText q={q} value={value || ""} onChange={onChange} showCorrection={showCorrection} />}
       {q.type === "correctedWords" && <FreeText q={q} value={value || ""} onChange={onChange} showCorrection={showCorrection} />}
