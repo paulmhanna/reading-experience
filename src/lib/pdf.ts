@@ -51,6 +51,43 @@ function findUnsupportedPdfStyles(root: HTMLElement) {
   return bad;
 }
 
+function findUnsupportedPdfCssRules() {
+  const badRules: Array<{
+    href: string;
+    selector: string;
+    cssText: string;
+  }> = [];
+
+  Array.from(document.styleSheets).forEach((sheet) => {
+    try {
+      const rules = Array.from(sheet.cssRules || []);
+      rules.forEach((rule) => {
+        const cssText = rule.cssText || "";
+        if (
+          cssText.includes("oklch") ||
+          cssText.includes("oklab") ||
+          cssText.includes("color-mix")
+        ) {
+          badRules.push({
+            href: (sheet as CSSStyleSheet).href || "inline <style>",
+            selector: "selectorText" in rule ? (rule as CSSStyleRule).selectorText || "<rule>" : "<rule>",
+            cssText: cssText.slice(0, 300),
+          });
+        }
+      });
+    } catch (error) {
+      badRules.push({
+        href: (sheet as CSSStyleSheet).href || "unknown stylesheet",
+        selector: "<unreadable>",
+        cssText: `Could not inspect stylesheet: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
+  });
+
+  console.table(badRules);
+  return badRules;
+}
+
 function sanitizePdfTree(root: HTMLElement) {
   const resetStyles = [
     "color:#111827",
@@ -85,6 +122,7 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
   }
 
   const initialBadStyles = findUnsupportedPdfStyles(el);
+  const stylesheetBadRules = findUnsupportedPdfCssRules();
   if (initialBadStyles.length > 0) {
     throw new Error("PDF unsafe styles found. Check console table.");
   }
@@ -141,11 +179,38 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
       scale: 2,
       useCORS: true,
       logging: false,
+      onclone: (clonedDoc) => {
+        clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach((node) => {
+          node.parentNode?.removeChild(node);
+        });
+
+        const hardReset = clonedDoc.createElement("style");
+        hardReset.textContent = `
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #111827 !important;
+          }
+          *, *::before, *::after {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            filter: none !important;
+            backdrop-filter: none !important;
+          }
+        `;
+        clonedDoc.head.appendChild(hardReset);
+      },
       windowWidth: isolate.scrollWidth,
       windowHeight: isolate.scrollHeight,
     });
   } finally {
     document.body.removeChild(isolate);
+  }
+
+  if (stylesheetBadRules.length > 0) {
+    console.info("[pdf] stripped stylesheet rules containing unsupported color functions before capture");
   }
 
   const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
