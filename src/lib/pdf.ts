@@ -1,6 +1,76 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
+function findUnsupportedPdfStyles(root: HTMLElement) {
+  const bad: Array<{
+    element: Element;
+    tag: string;
+    className: string;
+    prop: string;
+    value: string;
+    text: string;
+  }> = [];
+
+  const elements = [root, ...Array.from(root.querySelectorAll("*"))];
+
+  elements.forEach((el) => {
+    const s = window.getComputedStyle(el);
+    const checks = {
+      color: s.color,
+      backgroundColor: s.backgroundColor,
+      borderColor: s.borderColor,
+      borderTopColor: s.borderTopColor,
+      borderRightColor: s.borderRightColor,
+      borderBottomColor: s.borderBottomColor,
+      borderLeftColor: s.borderLeftColor,
+      boxShadow: s.boxShadow,
+      textDecorationColor: s.textDecorationColor,
+      outlineColor: s.outlineColor,
+    };
+
+    Object.entries(checks).forEach(([prop, value]) => {
+      if (
+        value &&
+        (value.includes("oklch") ||
+          value.includes("oklab") ||
+          value.includes("color-mix"))
+      ) {
+        bad.push({
+          element: el,
+          tag: el.tagName,
+          className: el.className,
+          prop,
+          value,
+          text: el.textContent?.slice(0, 80) || "",
+        });
+      }
+    });
+  });
+
+  console.table(bad);
+  return bad;
+}
+
+function sanitizePdfTree(root: HTMLElement) {
+  const resetStyles = [
+    "color:#111827",
+    "background:#ffffff",
+    "background-color:#ffffff",
+    "border-color:#e5e7eb",
+    "box-shadow:none",
+    "text-decoration-color:#111827",
+    "outline-color:#111827",
+    "filter:none",
+    "backdrop-filter:none",
+  ].join(";");
+
+  [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))].forEach((node) => {
+    node.removeAttribute("class");
+    const currentStyle = node.getAttribute("style");
+    node.setAttribute("style", currentStyle ? `${currentStyle};${resetStyles}` : resetStyles);
+  });
+}
+
 /**
  * Render a PDF-safe HTML element to a paginated PDF.
  * To avoid html2canvas choking on oklch/oklab/color-mix from the surrounding
@@ -14,6 +84,11 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
     try { await (document as any).fonts.ready; } catch {}
   }
 
+  const initialBadStyles = findUnsupportedPdfStyles(el);
+  if (initialBadStyles.length > 0) {
+    throw new Error("PDF unsafe styles found. Check console table.");
+  }
+
   // Build isolated container at body root so it inherits NOTHING from app theme.
   const isolate = document.createElement("div");
   isolate.setAttribute("dir", "rtl");
@@ -23,28 +98,41 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
     "top:0",
     "width:794px",
     "background:#ffffff",
+    "background-color:#ffffff",
     "color:#111827",
     "z-index:-1",
     "opacity:0",
     "pointer-events:none",
+    "margin:0",
+    "padding:0",
+    "box-shadow:none",
+    "filter:none",
+    "backdrop-filter:none",
+    "contain:style layout paint",
+    "isolation:isolate",
     'font-family:"Noto Naskh Arabic","Amiri","Segoe UI",sans-serif',
     // disable inheritance of any oklch/oklab CSS vars that would crash html2canvas
     "--background:#ffffff",
     "--foreground:#111827",
     "--border:#e5e7eb",
+    "--color-background:#ffffff",
+    "--color-foreground:#111827",
+    "--color-border:#e5e7eb",
   ].join(";");
 
   const clone = el.cloneNode(true) as HTMLElement;
-  // strip any class names that could pull in themed CSS variables
-  clone.querySelectorAll<HTMLElement>("*").forEach((n) => {
-    n.removeAttribute("class");
-  });
-  clone.removeAttribute("class");
+  sanitizePdfTree(clone);
 
   isolate.appendChild(clone);
   document.body.appendChild(isolate);
 
   await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+  const isolatedBadStyles = findUnsupportedPdfStyles(clone);
+  if (isolatedBadStyles.length > 0) {
+    document.body.removeChild(isolate);
+    throw new Error("PDF unsafe styles found. Check console table.");
+  }
 
   let canvas: HTMLCanvasElement;
   try {
