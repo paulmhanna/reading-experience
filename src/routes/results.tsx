@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { sections, gradeSection } from "@/config/questions";
 import { progressStore, useProgress } from "@/lib/progress";
 import { lessonAuthor, lessonTitle } from "@/config/lessonText";
@@ -20,6 +21,34 @@ function ResultsPage() {
   const printableRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [printHost, setPrintHost] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const host = document.createElement("div");
+    host.setAttribute("data-pdf-print-host", "true");
+    host.setAttribute("aria-hidden", "true");
+    host.style.cssText = [
+      "position:fixed",
+      "left:0",
+      "top:0",
+      "width:0",
+      "height:0",
+      "overflow:hidden",
+      "opacity:0",
+      "pointer-events:none",
+      "z-index:-1",
+      "background:#ffffff",
+      "color:#111827",
+      "isolation:isolate",
+    ].join(";");
+    document.body.appendChild(host);
+    setPrintHost(host);
+
+    return () => {
+      setPrintHost(null);
+      document.body.removeChild(host);
+    };
+  }, []);
 
   const results = useMemo(() => {
     return sections
@@ -180,28 +209,21 @@ function ResultsPage() {
         </div>
       </div>
 
-      {/* Hidden PDF-safe printable report (off-screen) */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          left: -10000,
-          top: 0,
-          pointerEvents: "none",
-          opacity: 0,
-        }}
-      >
-        <PrintableReport
-          ref={printableRef}
-          studentName={progress.studentName}
-          studentClass={progress.studentClass}
-          sessionId={progress.sessionId}
-          sections={sections}
-          answers={progress.answers}
-          expressionText={progress.expressionText}
-          researchText={progress.researchText}
-        />
-      </div>
+      {printHost
+        ? createPortal(
+            <PrintableReport
+              ref={printableRef}
+              studentName={progress.studentName}
+              studentClass={progress.studentClass}
+              sessionId={progress.sessionId}
+              sections={sections}
+              answers={progress.answers}
+              expressionText={progress.expressionText}
+              researchText={progress.researchText}
+            />,
+            printHost
+          )
+        : null}
     </div>
   );
 }

@@ -56,7 +56,6 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
       <div
         ref={ref}
         dir="rtl"
-        className="pdf-safe-report"
         style={{
           width: 794, // ~ A4 @ 96dpi
           padding: 32,
