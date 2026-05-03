@@ -135,23 +135,27 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
   const isolate = document.createElement("div");
   isolate.setAttribute("dir", "rtl");
   isolate.style.cssText = [
-    "position:fixed",
-    "left:0",
+    "position:absolute",
+    "left:-9999px",
     "top:0",
     "width:794px",
+    "min-height:1123px",
     "background:#ffffff",
     "background-color:#ffffff",
     "color:#111827",
-    "z-index:-1",
-    "opacity:0",
+    "z-index:999999",
+    "opacity:1",
+    "visibility:visible",
+    "display:block",
+    "overflow:visible",
     "pointer-events:none",
     "margin:0",
     "padding:0",
     "box-shadow:none",
     "filter:none",
     "backdrop-filter:none",
-    "contain:style layout paint",
     "isolation:isolate",
+    "direction:rtl",
     'font-family:"Noto Naskh Arabic","Amiri","Segoe UI",sans-serif',
     // disable inheritance of any oklch/oklab CSS vars that would crash html2canvas
     "--background:#ffffff",
@@ -169,6 +173,15 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
   document.body.appendChild(isolate);
 
   await new Promise((r) => requestAnimationFrame(() => r(null)));
+  await new Promise((r) => setTimeout(r, 100));
+
+  console.log("PDF isolate size:", isolate.scrollWidth, isolate.scrollHeight);
+  console.log("PDF clone text length:", clone.innerText.length);
+
+  if (isolate.scrollHeight === 0 || clone.innerText.length === 0) {
+    document.body.removeChild(isolate);
+    throw new Error("PDF generation failed: Isolated element or clone content is empty.");
+  }
 
   const isolatedBadStyles = findUnsupportedPdfStyles(clone);
   if (isolatedBadStyles.length > 0) {
