@@ -34,11 +34,33 @@ class AudioManager {
   }
   setEffectsVolume(v: number) {
     this.effectsVolume = Math.max(0, Math.min(1, v));
-    this.applyVolumes();
+
+    for (const e of this.activeEffects) {
+      const base = (e as any).__baseVolume ?? 0.7;
+      e.volume = this.muted ? 0 : base * this.effectsVolume;
+    }
   }
   setPlaybackRate(r: number) {
     this.playbackRate = r;
-    if (this.narrationEl) this.narrationEl.playbackRate = r;
+
+    if (this.narrationEl) {
+      this.narrationEl.defaultPlaybackRate = r;
+      this.narrationEl.playbackRate = r;
+    }
+
+    if (this.currentChunk && this.narrationEl && !this.isPaused) {
+      this.clearTimers();
+
+      const now = this.narrationEl.currentTime;
+
+      for (const cue of this.currentChunk.cues) {
+        if (cue.time > now) {
+          const delayMs = ((cue.time - now) / this.playbackRate) * 1000;
+          const t = window.setTimeout(() => this.fireCue(cue), delayMs);
+          this.cueTimers.push(t);
+        }
+      }
+    }
   }
 
   onNarrationEnded(cb: () => void) {
@@ -51,7 +73,8 @@ class AudioManager {
       this.narrationEl.volume = this.muted ? 0 : this.narrationVolume;
     }
     if (this.ambienceEl) {
-      this.ambienceEl.volume = this.muted ? 0 : this.ambienceVolume;
+      const chunkAmbienceVolume = this.currentChunk?.ambienceVolume ?? 0.4;
+      this.ambienceEl.volume = this.muted ? 0 : chunkAmbienceVolume * this.ambienceVolume;
     }
     for (const e of this.activeEffects) {
       const base = (e as any).__baseVolume ?? 0.7;
@@ -116,7 +139,7 @@ class AudioManager {
       const now = this.narrationEl.currentTime;
       for (const cue of this.currentChunk.cues) {
         if (cue.time > now) {
-          const delayMs = (cue.time - now) * 1000;
+          const delayMs = ((cue.time - now) / this.playbackRate) * 1000;
           const t = window.setTimeout(() => this.fireCue(cue), delayMs);
           this.cueTimers.push(t);
         }
@@ -137,7 +160,9 @@ class AudioManager {
         amb.volume = 0;
         this.ambienceEl = amb;
         amb.play().catch(() => {});
-        const targetVol = (config.ambienceVolume ?? 0.4) * (this.muted ? 0 : 1);
+        const targetVol = this.muted
+          ? 0
+          : (config.ambienceVolume ?? 0.4) * this.ambienceVolume;
         const fadeMs = (config.fadeIn ?? 0.5) * 1000;
         this.fade(amb, 0, targetVol, fadeMs);
       }
@@ -146,9 +171,25 @@ class AudioManager {
     const nar = this.createAudio(config.narration, "narration", 1);
     if (nar) {
       this.narrationEl = nar;
+      nar.defaultPlaybackRate = this.playbackRate;
       nar.playbackRate = this.playbackRate;
       nar.volume = this.muted ? 0 : this.narrationVolume;
       nar.addEventListener("ended", () => {
+        // Fade out ambience when narration ends
+        if (this.ambienceEl && this.currentChunk?.fadeOut) {
+          const fadeMs = this.currentChunk.fadeOut * 1000;
+
+          this.fade(this.ambienceEl, this.ambienceEl.volume, 0, fadeMs, () => {
+            this.ambienceEl?.pause();
+            this.ambienceEl = null;
+          });
+        } else if (this.ambienceEl) {
+          // fallback: immediate stop if no fadeOut
+          this.ambienceEl.pause();
+          this.ambienceEl = null;
+        }
+
+        // notify listeners (UI)
         for (const cb of this.endedHandlers) cb();
       });
       nar.play().catch(() => {
@@ -157,29 +198,43 @@ class AudioManager {
     }
 
     for (const cue of config.cues) {
-      const t = window.setTimeout(() => this.fireCue(cue), cue.time * 1000);
+      const delayMs = (cue.time / this.playbackRate) * 1000;
+      const t = window.setTimeout(() => this.fireCue(cue), delayMs);
       this.cueTimers.push(t);
     }
   }
 
   private fireCue(cue: AudioCue) {
     if (this.isPaused) return;
+
     const baseVol = cue.volume ?? 0.7;
     const a = this.createAudio(cue.effect, "effect", baseVol);
     if (!a) return;
+
+    (a as any).__baseVolume = baseVol;
+
     a.volume = this.muted ? 0 : baseVol * this.effectsVolume;
+
     a.play().catch(() => {});
+
     this.activeEffects.push(a);
+
     a.addEventListener("ended", () => {
       this.activeEffects = this.activeEffects.filter((x) => x !== a);
     });
+
     if (cue.stopAfter) {
       const t = window.setTimeout(() => {
-        this.fade(a, a.volume, 0, 400, () => {
+        const currentVolume = a.volume;
+
+        this.fade(a, currentVolume, 0, 400, () => {
           a.pause();
+          a.currentTime = 0;
+          a.src = "";
           this.activeEffects = this.activeEffects.filter((x) => x !== a);
         });
       }, cue.stopAfter * 1000);
+
       this.cueTimers.push(t);
     }
   }
