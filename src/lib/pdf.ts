@@ -95,6 +95,7 @@ function sanitizePdfTree(root: HTMLElement) {
     "background-color:#ffffff",
     "border-color:#e5e7eb",
     "box-shadow:none",
+    "text-shadow:none",
     "text-decoration-color:#111827",
     "outline-color:#111827",
     "filter:none",
@@ -124,7 +125,10 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
   const initialBadStyles = findUnsupportedPdfStyles(el);
   const stylesheetBadRules = findUnsupportedPdfCssRules();
   if (initialBadStyles.length > 0) {
-    throw new Error("PDF unsafe styles found. Check console table.");
+    console.warn(
+      "[pdf] Original report has inherited unsafe styles; continuing with sanitized clone.",
+      initialBadStyles,
+    );
   }
 
   // Build isolated container at body root so it inherits NOTHING from app theme.
