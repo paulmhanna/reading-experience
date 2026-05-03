@@ -173,6 +173,15 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
   document.body.appendChild(isolate);
 
   await new Promise((r) => requestAnimationFrame(() => r(null)));
+  await new Promise((r) => setTimeout(r, 100));
+
+  console.log("PDF isolate size:", isolate.scrollWidth, isolate.scrollHeight);
+  console.log("PDF clone text length:", clone.innerText.length);
+
+  if (isolate.scrollHeight === 0 || clone.innerText.length === 0) {
+    document.body.removeChild(isolate);
+    throw new Error("PDF generation failed: Isolated element or clone content is empty.");
+  }
 
   const isolatedBadStyles = findUnsupportedPdfStyles(clone);
   if (isolatedBadStyles.length > 0) {
