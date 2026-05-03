@@ -28,8 +28,8 @@ export const lessonAudio: Record<number, ChunkAudio> = {
     fadeIn: 0.6,
     fadeOut: 0.8,
     cues: [
-      { time: 1.2, effect: sfx("footsteps.mp3"), volume: 0.6, stopAfter: 4 },
-      { time: 6.5, effect: sfx("crowd-loud.mp3"), volume: 0.5, stopAfter: 6 },
+      { time: 1.2, effect: sfx("footsteps.mp3"), volume: 0.8, stopAfter: 4 },
+      //{ time: 6.5, effect: sfx("crowd-loud.mp3"), volume: 0.5, stopAfter: 6 },
     ],
   },
   2: {
@@ -41,9 +41,9 @@ export const lessonAudio: Record<number, ChunkAudio> = {
     fadeOut: 0.8,
     cues: [
       { time: 2.5, effect: sfx("cheer-burst.mp3"), volume: 0.7, stopAfter: 3 },
-      { time: 7, effect: sfx("anthem-swell.mp3"), volume: 0.55, stopAfter: 8 },
-      { time: 14, effect: sfx("flags-whoosh.mp3"), volume: 0.6, stopAfter: 4 },
-      { time: 22, effect: sfx("clap-burst.mp3"), volume: 0.6, stopAfter: 3 },
+      //{ time: 7, effect: sfx("anthem-swell.mp3"), volume: 0.55, stopAfter: 8 },
+      //{ time: 14, effect: sfx("flags-whoosh.mp3"), volume: 0.6, stopAfter: 4 },
+      { time: 5, effect: sfx("clap-burst.mp3"), volume: 0.6, stopAfter: 10 },
     ],
   },
   3: {
