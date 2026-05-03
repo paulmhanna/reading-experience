@@ -124,7 +124,10 @@ export async function exportElementToPdf(el: HTMLElement, filename: string) {
   const initialBadStyles = findUnsupportedPdfStyles(el);
   const stylesheetBadRules = findUnsupportedPdfCssRules();
   if (initialBadStyles.length > 0) {
-    throw new Error("PDF unsafe styles found. Check console table.");
+    console.warn(
+      "[pdf] Original report has inherited unsafe styles; continuing with sanitized clone.",
+      initialBadStyles,
+    );
   }
 
   // Build isolated container at body root so it inherits NOTHING from app theme.
