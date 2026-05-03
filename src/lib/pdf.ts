@@ -95,6 +95,7 @@ function sanitizePdfTree(root: HTMLElement) {
     "background-color:#ffffff",
     "border-color:#e5e7eb",
     "box-shadow:none",
+    "text-shadow:none",
     "text-decoration-color:#111827",
     "outline-color:#111827",
     "filter:none",
