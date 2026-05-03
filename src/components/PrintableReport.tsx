@@ -1,9 +1,9 @@
-// Clean print-friendly PDF report. Plain document layout (NOT a UI clone).
-// Hex colors only. No gradients, shadows, cards, Tailwind, or CSS variables.
+// Clean print-friendly PDF report. Document layout (NOT a UI clone).
+// Table-based, scannable, hex colors only. No Tailwind, no CSS variables.
 import { forwardRef } from "react";
 import type { Section, Question } from "@/config/questions";
 import { gradeSection } from "@/config/questions";
-import { resolveAnswer } from "@/lib/answerResolver";
+import { resolveAnswer, type ResolvedAnswerLine } from "@/lib/answerResolver";
 
 export interface PrintableReportProps {
   studentName: string;
@@ -17,21 +17,25 @@ export interface PrintableReportProps {
 
 const C = {
   text: "#000000",
-  muted: "#444444",
-  line: "#cccccc",
+  muted: "#555555",
+  line: "#bbbbbb",
+  lineSoft: "#dddddd",
   ok: "#16a34a",
   bad: "#dc2626",
   partial: "#b45309",
+  boxBg: "#f8fafc",
+  boxBorder: "#0f172a",
+  thBg: "#eef2f7",
 };
 
-const baseFont = '"Cairo","Tajawal","Amiri","Segoe UI",sans-serif';
+const baseFont =
+  '"Noto Naskh Arabic","Amiri","Cairo","Tajawal","Segoe UI",sans-serif';
 
 export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
   function PrintableReport(props, ref) {
     const {
       studentName,
       studentClass,
-      sessionId: _sessionId,
       sections,
       answers,
       expressionText,
@@ -53,74 +57,105 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
         dir="rtl"
         style={{
           width: 794,
-          padding: 36,
+          padding: 40,
           background: "#ffffff",
           color: C.text,
           fontFamily: baseFont,
           fontSize: 14,
-          lineHeight: 1.7,
+          lineHeight: 1.55,
           textAlign: "right",
         }}
       >
         {/* Title */}
         <h1
           style={{
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: 800,
             margin: 0,
-            marginBottom: 16,
+            marginBottom: 18,
             textAlign: "center",
             color: C.text,
+            letterSpacing: 0,
           }}
         >
           تقرير التّقييم
         </h1>
 
-        {/* Student info */}
-        <div style={{ marginBottom: 16, fontSize: 14 }}>
-          <div style={{ marginBottom: 4 }}>
-            <strong>اسم التّلميذ: </strong>
-            {studentName || "—"}
-          </div>
-          <div style={{ marginBottom: 4 }}>
-            <strong>الصّفّ: </strong>
-            {studentClass || "—"}
-          </div>
-          <div style={{ marginBottom: 4 }}>
-            <strong>التّاريخ: </strong>
-            {new Date().toLocaleDateString("ar")}
-          </div>
-        </div>
+        {/* Student info grid */}
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            marginBottom: 16,
+            fontSize: 14,
+          }}
+        >
+          <tbody>
+            <tr>
+              <td style={{ padding: "2px 0", width: "33%" }}>
+                <strong>اسم التّلميذ: </strong>
+                {studentName || "—"}
+              </td>
+              <td style={{ padding: "2px 0", width: "33%" }}>
+                <strong>الصّفّ: </strong>
+                {studentClass || "—"}
+              </td>
+              <td style={{ padding: "2px 0", width: "33%" }}>
+                <strong>التّاريخ: </strong>
+                {new Date().toLocaleDateString("ar")}
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Summary */}
-        <div style={{ marginBottom: 20, fontSize: 14 }}>
-          <div style={{ marginBottom: 6 }}>
-            <strong>العلامة النّهائيّة: </strong>
-            {Math.round(totalEarned * 10) / 10} / {totalMax}
+        {/* Summary box */}
+        <div
+          style={{
+            border: `2px solid ${C.boxBorder}`,
+            background: C.boxBg,
+            padding: "14px 18px",
+            marginBottom: 22,
+            borderRadius: 4,
+          }}
+        >
+          <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
+            العلامة النّهائيّة: {Math.round(totalEarned * 10) / 10} / {totalMax}
+            <span style={{ marginInlineStart: 16, fontWeight: 700 }}>
+              النّسبة: {pct}%
+            </span>
           </div>
-          <div style={{ marginBottom: 10 }}>
-            <strong>النّسبة: </strong>
-            {pct}%
+          <div
+            style={{
+              borderTop: `1px solid ${C.lineSoft}`,
+              marginTop: 8,
+              paddingTop: 8,
+              fontSize: 14,
+            }}
+          >
+            {results.map((r) => (
+              <div key={r.section.id} style={{ marginBottom: 2 }}>
+                <strong>{r.section.title}: </strong>
+                {Math.round(r.earned * 10) / 10} / {r.max}
+              </div>
+            ))}
           </div>
-          {results.map((r) => (
-            <div key={r.section.id} style={{ marginBottom: 4 }}>
-              <strong>{r.section.title}: </strong>
-              {Math.round(r.earned * 10) / 10} / {r.max}
-            </div>
-          ))}
         </div>
 
         {/* Sections */}
         {results.map((r) => (
-          <div key={r.section.id} style={{ marginTop: 20, marginBottom: 12 }}>
+          <div
+            key={r.section.id}
+            style={{ marginTop: 18, pageBreakInside: "avoid" }}
+          >
             <h2
               style={{
                 fontSize: 18,
-                fontWeight: 700,
+                fontWeight: 800,
                 margin: 0,
-                marginBottom: 12,
-                paddingBottom: 4,
-                borderBottom: `1px solid ${C.line}`,
+                marginBottom: 10,
+                padding: "6px 10px",
+                background: C.thBg,
+                borderInlineStart: `4px solid ${C.boxBorder}`,
                 color: C.text,
               }}
             >
@@ -146,28 +181,29 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
         ))}
 
         {(expressionText || researchText) && (
-          <div style={{ marginTop: 20 }}>
+          <div style={{ marginTop: 22 }}>
             <h2
               style={{
                 fontSize: 18,
-                fontWeight: 700,
+                fontWeight: 800,
                 margin: 0,
-                marginBottom: 12,
-                paddingBottom: 4,
-                borderBottom: `1px solid ${C.line}`,
+                marginBottom: 10,
+                padding: "6px 10px",
+                background: C.thBg,
+                borderInlineStart: `4px solid ${C.boxBorder}`,
               }}
             >
               إجابات غير محتسبة
             </h2>
             {expressionText && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>في التّعبير:</div>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>في التّعبير:</div>
                 <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{expressionText}</p>
               </div>
             )}
             {researchText && (
               <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>في البحث:</div>
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>في البحث:</div>
                 <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{researchText}</p>
               </div>
             )}
@@ -191,13 +227,27 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
   }
 );
 
-function ResultMark({ ok }: { ok: true | false | "partial" | "ungraded" }) {
-  if (ok === true) return <span style={{ color: C.ok, fontWeight: 700 }}>✔</span>;
-  if (ok === false) return <span style={{ color: C.bad, fontWeight: 700 }}>✘</span>;
+function Mark({ ok }: { ok: ResolvedAnswerLine["ok"] }) {
+  if (ok === true) return <span style={{ color: C.ok, fontWeight: 800 }}>✔</span>;
+  if (ok === false) return <span style={{ color: C.bad, fontWeight: 800 }}>✘</span>;
   if (ok === "partial")
     return <span style={{ color: C.partial, fontWeight: 700 }}>جزئي</span>;
   return <span style={{ color: C.muted }}>—</span>;
 }
+
+const cellBase: React.CSSProperties = {
+  border: `1px solid ${C.line}`,
+  padding: "6px 10px",
+  textAlign: "right",
+  fontSize: 14,
+  verticalAlign: "middle",
+};
+const headBase: React.CSSProperties = {
+  ...cellBase,
+  background: C.thBg,
+  fontWeight: 700,
+  textAlign: "center",
+};
 
 function QuestionItem({
   index,
@@ -214,49 +264,34 @@ function QuestionItem({
 }) {
   const isHaraka = q.type === "finalHarakaTokens";
   const lines = resolveAnswer(q, studentAnswer);
+  const isMultiPart =
+    isHaraka ||
+    q.type === "subgroup" ||
+    q.type === "tokenCorrection" ||
+    q.type === "tableFill" ||
+    (q.type === "correctedWords");
 
   return (
-    <div style={{ marginBottom: 18, fontSize: 14 }}>
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+    <div style={{ marginBottom: 14, pageBreakInside: "avoid" }}>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
         سؤال {index}: {q.prompt}
       </div>
       {q.context && (
-        <div style={{ marginBottom: 8, fontSize: 13, color: C.muted }}>{q.context}</div>
+        <div style={{ marginBottom: 6, fontSize: 13, color: C.muted }}>
+          {q.context}
+        </div>
       )}
 
       {isHaraka ? (
         <HarakaTable q={q} studentAnswer={studentAnswer} />
+      ) : isMultiPart ? (
+        <AnswerTable lines={lines} />
       ) : (
-        <div>
-          {lines.map((line, i) => {
-            const ok = line.ok;
-            return (
-              <div key={i} style={{ marginBottom: 8 }}>
-                {line.label && (
-                  <div style={{ fontWeight: 700, marginBottom: 2 }}>{line.label}</div>
-                )}
-                <div style={{ marginBottom: 2 }}>
-                  <strong>إجابة التّلميذ: </strong>
-                  <span style={{ color: ok === false ? C.bad : C.text }}>
-                    {line.given}
-                  </span>
-                </div>
-                <div style={{ marginBottom: 2 }}>
-                  <strong>الإجابة الصّحيحة: </strong>
-                  <span style={{ color: C.ok }}>{line.correct || "—"}</span>
-                </div>
-                <div>
-                  <strong>النّتيجة: </strong>
-                  <ResultMark ok={ok} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <CompactAnswer line={lines[0]} />
       )}
 
       {max > 0 && (
-        <div style={{ marginTop: 6, fontWeight: 700 }}>
+        <div style={{ marginTop: 4, fontWeight: 700, fontSize: 14 }}>
           العلامة: {Math.round(earned * 10) / 10} / {max}
         </div>
       )}
@@ -264,54 +299,114 @@ function QuestionItem({
   );
 }
 
-function HarakaTable({ q, studentAnswer }: { q: Question; studentAnswer: any }) {
-  const tokens = q.tokens || [];
-  const given = (studentAnswer && typeof studentAnswer === "object" ? studentAnswer : {}) as Record<string, string>;
-
-  const cell: React.CSSProperties = {
-    border: `1px solid ${C.line}`,
-    padding: "6px 10px",
-    textAlign: "center",
-    fontSize: 14,
-  };
-  const head: React.CSSProperties = {
-    ...cell,
-    fontWeight: 700,
-    background: "#f3f4f6",
-  };
-
+function CompactAnswer({ line }: { line?: ResolvedAnswerLine }) {
+  if (!line) return null;
   return (
-    <table
-      style={{
-        width: "100%",
-        borderCollapse: "collapse",
-        marginTop: 6,
-        marginBottom: 6,
-        fontFamily: baseFont,
-      }}
-    >
+    <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+      <div>
+        <strong>إجابة التّلميذ: </strong>
+        <span style={{ color: line.ok === false ? C.bad : C.text }}>
+          {line.given}
+        </span>
+      </div>
+      <div>
+        <strong>الإجابة الصّحيحة: </strong>
+        <span style={{ color: C.ok }}>{line.correct || "—"}</span>
+      </div>
+      <div>
+        <strong>النّتيجة: </strong>
+        <Mark ok={line.ok} />
+      </div>
+    </div>
+  );
+}
+
+function AnswerTable({ lines }: { lines: ResolvedAnswerLine[] }) {
+  if (!lines.length) return null;
+  const hasLabels = lines.some((l) => l.label);
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 4 }}>
       <thead>
         <tr>
-          <th style={head}>الكلمة</th>
-          <th style={head}>إجابة التّلميذ</th>
-          <th style={head}>الصّحيحة</th>
-          <th style={head}>النّتيجة</th>
+          {hasLabels && <th style={{ ...headBase, width: "28%" }}>البند</th>}
+          <th style={headBase}>إجابة التّلميذ</th>
+          <th style={headBase}>الصّحيحة</th>
+          <th style={{ ...headBase, width: 70 }}>النّتيجة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((l, i) => (
+          <tr key={i}>
+            {hasLabels && (
+              <td style={{ ...cellBase, fontWeight: 700 }}>{l.label || "—"}</td>
+            )}
+            <td
+              style={{
+                ...cellBase,
+                color: l.ok === false ? C.bad : C.text,
+              }}
+            >
+              {l.given}
+            </td>
+            <td style={{ ...cellBase, color: C.ok }}>{l.correct || "—"}</td>
+            <td style={{ ...cellBase, textAlign: "center" }}>
+              <Mark ok={l.ok} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function HarakaTable({ q, studentAnswer }: { q: Question; studentAnswer: any }) {
+  const tokens = q.tokens || [];
+  const given = (studentAnswer && typeof studentAnswer === "object"
+    ? studentAnswer
+    : {}) as Record<string, string>;
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 4 }}>
+      <thead>
+        <tr>
+          <th style={headBase}>الكلمة</th>
+          <th style={headBase}>إجابة التّلميذ</th>
+          <th style={headBase}>الصّحيحة</th>
+          <th style={{ ...headBase, width: 70 }}>النّتيجة</th>
         </tr>
       </thead>
       <tbody>
         {tokens.map((t) => {
           const g = (given[t.id] || "").trim();
           const expected = t.targetHaraka || "";
-          const ok = g && expected ? g === expected : false;
+          const ok = !!g && !!expected && g === expected;
           return (
             <tr key={t.id}>
-              <td style={cell}>{t.label}</td>
-              <td style={{ ...cell, color: ok ? C.text : C.bad, fontSize: 18 }}>
+              <td style={{ ...cellBase, textAlign: "center", fontWeight: 700 }}>
+                {t.label}
+              </td>
+              <td
+                style={{
+                  ...cellBase,
+                  textAlign: "center",
+                  fontSize: 20,
+                  color: ok ? C.text : C.bad,
+                }}
+              >
                 {g || "—"}
               </td>
-              <td style={{ ...cell, color: C.ok, fontSize: 18 }}>{expected || "—"}</td>
-              <td style={cell}>
-                <ResultMark ok={ok ? true : false} />
+              <td
+                style={{
+                  ...cellBase,
+                  textAlign: "center",
+                  fontSize: 20,
+                  color: C.ok,
+                }}
+              >
+                {expected || "—"}
+              </td>
+              <td style={{ ...cellBase, textAlign: "center" }}>
+                <Mark ok={ok ? true : false} />
               </td>
             </tr>
           );
