@@ -29,10 +29,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "تَسَلَّ وتَعَلَّمْ — في ملعب كرة السّلّة" },
+      { title: "تَسَلَّ وتَعَلَّمْ - في ملعب كرة السّلّة" },
       { name: "description", content: "تجربة قراءة وتقييم تفاعليّة بالعربيّة." },
-      { property: "og:title", content: "تَسَلَّ وتَعَلَّمْ — في ملعب كرة السّلّة" },
-      { name: "twitter:title", content: "تَسَلَّ وتَعَلَّمْ — في ملعب كرة السّلّة" },
+      { property: "og:title", content: "تَسَلَّ وتَعَلَّمْ - في ملعب كرة السّلّة" },
+      { name: "twitter:title", content: "تَسَلَّ وتَعَلَّمْ - في ملعب كرة السّلّة" },
       { rel: "icon", href: "/favicon.ico" },
       { property: "og:description", content: "تجربة قراءة وتقييم تفاعليّة بالعربيّة." },
       { name: "twitter:description", content: "تجربة قراءة وتقييم تفاعليّة بالعربيّة." },
