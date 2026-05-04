@@ -33,10 +33,19 @@ export const Route = createRootRoute({
       { name: "description", content: "تجربة قراءة وتقييم تفاعليّة بالعربيّة." },
       { property: "og:title", content: "تَسَلَّ وتَعَلَّمْ — في ملعب كرة السّلّة" },
       { name: "twitter:title", content: "تَسَلَّ وتَعَلَّمْ — في ملعب كرة السّلّة" },
+      { rel: "icon", href: "/favicon.ico" },
       { property: "og:description", content: "تجربة قراءة وتقييم تفاعليّة بالعربيّة." },
       { name: "twitter:description", content: "تجربة قراءة وتقييم تفاعليّة بالعربيّة." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ef35c839-3360-4722-9063-f346e7d03fc2/id-preview-be46edab--59fb8acf-d7bc-4d31-a1a1-ddd7d5964229.lovable.app-1777109263066.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ef35c839-3360-4722-9063-f346e7d03fc2/id-preview-be46edab--59fb8acf-d7bc-4d31-a1a1-ddd7d5964229.lovable.app-1777109263066.png" },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ef35c839-3360-4722-9063-f346e7d03fc2/id-preview-be46edab--59fb8acf-d7bc-4d31-a1a1-ddd7d5964229.lovable.app-1777109263066.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ef35c839-3360-4722-9063-f346e7d03fc2/id-preview-be46edab--59fb8acf-d7bc-4d31-a1a1-ddd7d5964229.lovable.app-1777109263066.png",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
